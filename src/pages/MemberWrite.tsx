@@ -1,31 +1,14 @@
+
 import { useEffect, useState } from "react";
-import {
-  Link,
-  useNavigate,
-  useSearchParams,
-} from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 
-type ContentType = "article" | "research";
-type ContentStatus =
+type ArticleStatus =
   | "draft"
   | "pending"
   | "published"
   | "rejected"
   | "archived";
-
-type ExistingArticle = {
-  id: string;
-  author_id: string | null;
-  author_name: string | null;
-  title: string;
-  excerpt: string | null;
-  content: string;
-  category: string | null;
-  cover_image_url: string | null;
-  content_type: ContentType;
-  status: ContentStatus;
-};
 
 export default function MemberWrite() {
   const navigate = useNavigate();
@@ -33,18 +16,18 @@ export default function MemberWrite() {
   const id = params.get("id");
 
   const [userId, setUserId] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false);
-
+  const [ownerId, setOwnerId] = useState("");
   const [author, setAuthor] = useState("");
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [category, setCategory] = useState("");
   const [body, setBody] = useState("");
-  const [type, setType] = useState<ContentType>("article");
+  const [type, setType] = useState("article");
   const [cover, setCover] = useState("");
-  const [status, setStatus] = useState<ContentStatus>("draft");
-
-  const [message, setMessage] = useState("Loading editor...");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [originalStatus, setOriginalStatus] =
+    useState<ArticleStatus>("draft");
+  const [message, setMessage] = useState("Loading...");
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
 
@@ -62,26 +45,24 @@ export default function MemberWrite() {
         return;
       }
 
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("role,display_name")
-        .eq("id", session.user.id)
-        .maybeSingle();
+      const { data: profile, error: profileError } =
+        await supabase
+          .from("profiles")
+          .select("role, display_name")
+          .eq("id", session.user.id)
+          .maybeSingle();
 
       if (!active) return;
 
-      if (profileError || !profile) {
-        setMessage("Could not verify your profile.");
+      if (profileError) {
+        setMessage("Could not verify your account permissions.");
         return;
       }
 
-      const admin = profile.role === "admin";
+      const admin = profile?.role === "admin";
 
       setUserId(session.user.id);
       setIsAdmin(admin);
-      setAuthor(
-        profile.display_name || session.user.email || ""
-      );
 
       if (id) {
         let query = supabase
@@ -89,8 +70,8 @@ export default function MemberWrite() {
           .select("*")
           .eq("id", id);
 
-        // Admin dapat membuka semua konten.
-        // Member biasa hanya dapat membuka konten miliknya.
+        // Members may edit only their own submissions.
+        // Admins may edit any article, subject to Supabase RLS.
         if (!admin) {
           query = query.eq("author_id", session.user.id);
         }
@@ -101,28 +82,33 @@ export default function MemberWrite() {
 
         if (error || !data) {
           setMessage(
-            "Content could not be loaded. Check your access or Supabase policies."
+            "Article not found or you do not have permission to edit it."
           );
           return;
         }
 
-        const item = data as ExistingArticle;
-
-        if (!admin && item.status === "published") {
+        if (!admin && data.status === "published") {
           setMessage(
-            "Published content cannot be edited by members."
+            "Published submissions cannot be edited here."
           );
           return;
         }
 
-        setAuthor(item.author_name || profile.display_name || "");
-        setTitle(item.title || "");
-        setExcerpt(item.excerpt || "");
-        setCategory(item.category || "");
-        setBody(item.content || "");
-        setType(item.content_type || "article");
-        setCover(item.cover_image_url || "");
-        setStatus(item.status || "draft");
+        setOwnerId(data.author_id || "");
+        setAuthor(data.author_name || "");
+        setTitle(data.title || "");
+        setExcerpt(data.excerpt || "");
+        setCategory(data.category || "");
+        setType(data.content_type || "article");
+        setCover(data.cover_image_url || "");
+        setBody(data.content || "");
+        setOriginalStatus(
+          (data.status || "draft") as ArticleStatus
+        );
+      } else {
+        setAuthor(
+          profile?.display_name || session.user.email || ""
+        );
       }
 
       setMessage("");
@@ -136,105 +122,76 @@ export default function MemberWrite() {
     };
   }, [id, navigate]);
 
-  async function saveContent(
-    nextStatus: ContentStatus
-  ) {
+  async function save(mode: "draft" | "pending") {
     if (!author.trim() || !title.trim() || !body.trim()) {
-      setMessage(
-        "Please fill in the author name, title, and content body."
-      );
+      setMessage("Please enter an author name, title, and body.");
       return;
     }
 
     setBusy(true);
     setMessage("");
 
-    const now = new Date().toISOString();
-
     const payload = {
+      // Preserve the original author when an admin edits an article.
+      author_id: id && isAdmin ? ownerId : userId,
       author_name: author.trim(),
       title: title.trim(),
-      excerpt: excerpt.trim() || null,
-      content: body.trim(),
-      category: category.trim() || null,
+      excerpt: excerpt.trim(),
+      content: body,
+      category: category.trim(),
       cover_image_url: cover.trim() || null,
       content_type: type,
-      status: nextStatus,
-      updated_at: now,
-      ...(nextStatus === "published"
-        ? { published_at: now }
-        : {}),
+      status: id && isAdmin ? originalStatus : mode,
+      updated_at: new Date().toISOString(),
     };
 
-    try {
-      if (id) {
-        let query = supabase
+    const result = id
+      ? await (isAdmin
+          ? supabase
+              .from("articles")
+              .update(payload)
+              .eq("id", id)
+          : supabase
+              .from("articles")
+              .update(payload)
+              .eq("id", id)
+              .eq("author_id", userId))
+      : await supabase
           .from("articles")
-          .update(payload)
-          .eq("id", id);
-
-        if (!isAdmin) {
-          query = query
-            .eq("author_id", userId)
-            .neq("status", "published");
-        }
-
-        const { data, error } = await query
-          .select("id")
-          .maybeSingle();
-
-        if (error) {
-          setMessage("Could not update content: " + error.message);
-          return;
-        }
-
-        if (!data) {
-          setMessage(
-            "No content was updated. Check the article ID and Supabase permissions."
-          );
-          return;
-        }
-      } else {
-        const { data, error } = await supabase
-          .from("articles")
-          .insert({
-            ...payload,
-            author_id: userId,
-            created_at: now,
-          })
+          .insert(payload)
           .select("id")
           .single();
 
-        if (error) {
-          setMessage("Could not create content: " + error.message);
-          return;
-        }
+    setBusy(false);
 
-        if (!data) {
-          setMessage("Content was not created.");
-          return;
-        }
+    if (result.error) {
+      setMessage("Could not save article: " + result.error.message);
+      return;
+    }
 
-        setMessage("Content created successfully.");
-        navigate(
-          "/member/write?id=" + encodeURIComponent(data.id),
-          { replace: true }
-        );
-        return;
-      }
+    setMessage(
+      id
+        ? "Article changes saved."
+        : mode === "draft"
+          ? "Draft saved."
+          : "Submitted for editorial review."
+    );
 
-      setStatus(nextStatus);
+    if (isAdmin) {
+      navigate("/admin");
+      return;
+    }
 
-      if (nextStatus === "pending") {
-        navigate("/member");
-        return;
-      }
+    if (mode === "pending") {
+      navigate("/member");
+      return;
+    }
 
-      setMessage("Changes saved successfully.");
-    } catch {
-      setMessage("An unexpected error occurred while saving.");
-    } finally {
-      setBusy(false);
+    if (!id && result.data && "id" in result.data) {
+      navigate(
+        "/member/write?id=" + encodeURIComponent(result.data.id),
+        { replace: true }
+      );
     }
   }
 
@@ -242,6 +199,9 @@ export default function MemberWrite() {
     return (
       <main className="member-page">
         <p role="status">{message}</p>
+        <Link className="back-link" to={isAdmin ? "/admin" : "/member"}>
+          ← Back
+        </Link>
       </main>
     );
   }
@@ -250,39 +210,30 @@ export default function MemberWrite() {
     <main className="member-page">
       <header className="member-heading">
         <div>
-          <Link className="back-link" to="/member">
-            ← Member workspace
+          <Link
+            className="back-link"
+            to={isAdmin ? "/admin" : "/member"}
+          >
+            ← {isAdmin ? "Admin dashboard" : "Member workspace"}
           </Link>
 
           <p className="eyebrow">Economic Policy Lab</p>
-
-          <h1>{id ? "Edit content" : "Create content"}</h1>
-
+          <h1>{id ? "Edit article" : "Create a submission"}</h1>
           <p>
             {isAdmin
-              ? "You can manage articles and research as an administrator."
-              : "Prepare your submission for editorial review."}
+              ? "Administrator editing mode."
+              : "Prepare your work for editorial review."}
           </p>
         </div>
-
-        {isAdmin && (
-          <Link className="text-button" to="/admin">
-            Admin dashboard
-          </Link>
-        )}
       </header>
 
-      {message && (
-        <p className="form-message" role="status">
-          {message}
-        </p>
-      )}
+      {message && <p role="status">{message}</p>}
 
       <form
         className="member-editor-form"
         onSubmit={(event) => {
           event.preventDefault();
-          void saveContent(isAdmin ? status : "pending");
+          void save("pending");
         }}
       >
         <section className="member-form-card">
@@ -290,9 +241,7 @@ export default function MemberWrite() {
             Content type
             <select
               value={type}
-              onChange={(event) =>
-                setType(event.target.value as ContentType)
-              }
+              onChange={(event) => setType(event.target.value)}
             >
               <option value="article">Article</option>
               <option value="research">Research</option>
@@ -321,7 +270,7 @@ export default function MemberWrite() {
           <label>
             Abstract / excerpt
             <textarea
-              rows={4}
+              rows={3}
               value={excerpt}
               onChange={(event) => setExcerpt(event.target.value)}
             />
@@ -333,7 +282,7 @@ export default function MemberWrite() {
               type="url"
               value={cover}
               onChange={(event) => setCover(event.target.value)}
-              placeholder="https://example.com/image.jpg"
+              placeholder="https://..."
             />
           </label>
 
@@ -342,7 +291,6 @@ export default function MemberWrite() {
             <input
               value={category}
               onChange={(event) => setCategory(event.target.value)}
-              placeholder="e.g. Monetary Policy"
             />
           </label>
 
@@ -353,49 +301,32 @@ export default function MemberWrite() {
               rows={18}
               value={body}
               onChange={(event) => setBody(event.target.value)}
-              placeholder="Write the complete article or research paper here..."
+              placeholder="Write your article or research here..."
             />
           </label>
-
-          {isAdmin && (
-            <label>
-              Publication status
-              <select
-                value={status}
-                onChange={(event) =>
-                  setStatus(event.target.value as ContentStatus)
-                }
-              >
-                <option value="draft">Draft</option>
-                <option value="pending">Pending review</option>
-                <option value="published">Published</option>
-                <option value="rejected">Rejected</option>
-                <option value="archived">Archived</option>
-              </select>
-            </label>
-          )}
         </section>
 
         <div className="member-form-actions">
-          <Link className="text-button" to="/member">
+          <Link
+            className="text-button"
+            to={isAdmin ? "/admin" : "/member"}
+          >
             Cancel
           </Link>
 
           <div>
-            <button
-              type="button"
-              className="text-button"
-              disabled={busy}
-              onClick={() => void saveContent("draft")}
-            >
-              {busy ? "Saving..." : "Save draft"}
-            </button>
+            {!isAdmin && (
+              <button
+                type="button"
+                className="text-button"
+                disabled={busy}
+                onClick={() => void save("draft")}
+              >
+                {busy ? "Saving..." : "Save draft"}
+              </button>
+            )}
 
-            <button
-              type="submit"
-              className="epl-button"
-              disabled={busy}
-            >
+            <button className="epl-button" disabled={busy}>
               {busy
                 ? "Saving..."
                 : isAdmin
