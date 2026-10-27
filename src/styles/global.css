@@ -1781,3 +1781,35 @@ textarea:focus-visible, select:focus-visible {
   text-align: justify;
 }
 
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.approve-button,
+.reject-button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.approve-button {
+  background: #facc15;
+  color: #111827;
+}
+
+.reject-button {
+  background: #2563eb;
+  color: white;
+}
+
+.approve-button:disabled,
+.reject-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
