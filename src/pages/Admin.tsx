@@ -1,3 +1,4 @@
+
 import {
   useCallback,
   useEffect,
@@ -64,7 +65,9 @@ export default function Admin() {
   const [items, setItems] = useState<Article[]>([]);
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [identity, setIdentity] = useState("");
-  const [message, setMessage] = useState("Checking administrator access...");
+  const [message, setMessage] = useState(
+    "Checking administrator access..."
+  );
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -130,11 +133,12 @@ export default function Admin() {
         return;
       }
 
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("role,display_name")
-        .eq("id", session.user.id)
-        .maybeSingle();
+      const { data: profile, error: profileError } =
+        await supabase
+          .from("profiles")
+          .select("role,display_name")
+          .eq("id", session.user.id)
+          .maybeSingle();
 
       if (!active) return;
 
@@ -144,8 +148,11 @@ export default function Admin() {
       }
 
       setIdentity(
-        profile.display_name || session.user.email || "Administrator"
+        profile.display_name ||
+          session.user.email ||
+          "Administrator"
       );
+
       setReady(true);
       await refreshAll();
     }
@@ -169,16 +176,21 @@ export default function Admin() {
 
     setBusy(true);
 
+    const now = new Date().toISOString();
+
     const result =
       status === "deleted"
-        ? await supabase.from("articles").delete().eq("id", item.id)
+        ? await supabase
+            .from("articles")
+            .delete()
+            .eq("id", item.id)
         : await supabase
             .from("articles")
             .update({
               status,
-              updated_at: new Date().toISOString(),
+              updated_at: now,
               ...(status === "published"
-                ? { published_at: new Date().toISOString() }
+                ? { published_at: now }
                 : {}),
             })
             .eq("id", item.id);
@@ -186,7 +198,9 @@ export default function Admin() {
     setBusy(false);
 
     if (result.error) {
-      setMessage("Could not update article: " + result.error.message);
+      setMessage(
+        "Could not update article: " + result.error.message
+      );
       return;
     }
 
@@ -199,8 +213,58 @@ export default function Admin() {
     await loadArticles();
   }
 
+  // Approve one pending article.
+  async function approveArticle(item: Article) {
+    if (
+      !window.confirm(
+        `Approve and publish "${item.title || "Untitled"}"?`
+      )
+    ) {
+      return;
+    }
+
+    setBusy(true);
+    setMessage("Publishing article...");
+
+    const now = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from("articles")
+      .update({
+        status: "published",
+        published_at: now,
+        updated_at: now,
+      })
+      .eq("id", item.id)
+      .eq("status", "pending")
+      .select("id");
+
+    setBusy(false);
+
+    if (error) {
+      setMessage(
+        "Could not approve article: " + error.message
+      );
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      setMessage(
+        "Article was not updated. Check its status and your Supabase permissions."
+      );
+      await loadArticles();
+      return;
+    }
+
+    setMessage("Article approved and published successfully.");
+    await loadArticles();
+  }
+
+  // Approve all pending articles.
   async function approveAllPending() {
-    const pending = items.filter((item) => item.status === "pending");
+    const pending = items.filter(
+      (item) => item.status === "pending"
+    );
 
     if (pending.length === 0) {
       setMessage("There are no pending articles to approve.");
@@ -232,11 +296,13 @@ export default function Admin() {
     setBusy(false);
 
     if (error) {
-      setMessage("Could not approve articles: " + error.message);
+      setMessage(
+        "Could not approve articles: " + error.message
+      );
       return;
     }
 
-    setMessage("All pending articles have been published.");
+    setMessage("Pending articles have been published.");
     await loadArticles();
   }
 
@@ -244,7 +310,12 @@ export default function Admin() {
     const nextValue = !item.is_featured;
 
     const nextOrder = nextValue
-      ? Math.max(0, ...items.map((article) => article.featured_order || 0)) + 1
+      ? Math.max(
+          0,
+          ...items.map(
+            (article) => article.featured_order || 0
+          )
+        ) + 1
       : 0;
 
     const { error } = await supabase
@@ -257,7 +328,9 @@ export default function Admin() {
       .eq("id", item.id);
 
     if (error) {
-      setMessage("Could not update Highlights: " + error.message);
+      setMessage(
+        "Could not update Highlights: " + error.message
+      );
       return;
     }
 
@@ -270,16 +343,23 @@ export default function Admin() {
     await loadArticles();
   }
 
-  async function saveFeaturedOrder(item: Article, rawValue: string) {
+  async function saveFeaturedOrder(
+    item: Article,
+    rawValue: string
+  ) {
     const order = Number(rawValue);
 
     if (!Number.isInteger(order) || order < 1) {
-      setMessage("Highlight order must be a positive whole number.");
+      setMessage(
+        "Highlight order must be a positive whole number."
+      );
       return;
     }
 
     if (!item.is_featured) {
-      setMessage("Add the article to Highlights before setting its order.");
+      setMessage(
+        "Add the article to Highlights before setting its order."
+      );
       return;
     }
 
@@ -323,7 +403,9 @@ export default function Admin() {
     setTeamForm(emptyTeamForm);
   }
 
-  async function uploadTeamImage(event: ChangeEvent<HTMLInputElement>) {
+  async function uploadTeamImage(
+    event: ChangeEvent<HTMLInputElement>
+  ) {
     const input = event.currentTarget;
     const file = input.files?.[0];
 
@@ -345,7 +427,10 @@ export default function Admin() {
     setMessage("Uploading team photo...");
 
     try {
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+      const safeName = file.name.replace(
+        /[^a-zA-Z0-9._-]/g,
+        "-"
+      );
       const path = `${crypto.randomUUID()}-${safeName}`;
 
       const { error } = await supabase.storage
@@ -369,19 +454,28 @@ export default function Admin() {
         image_url: data.publicUrl,
       }));
 
-      setMessage("Photo uploaded. Save the team member to keep the changes.");
+      setMessage(
+        "Photo uploaded. Save the team member to keep the changes."
+      );
     } catch {
-      setMessage("An unexpected error occurred while uploading.");
+      setMessage(
+        "An unexpected error occurred while uploading."
+      );
     } finally {
       setBusy(false);
       input.value = "";
     }
   }
 
-  async function saveTeamMember(event: FormEvent<HTMLFormElement>) {
+  async function saveTeamMember(
+    event: FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
 
-    if (!teamForm.name.trim() || !teamForm.role_title.trim()) {
+    if (
+      !teamForm.name.trim() ||
+      !teamForm.role_title.trim()
+    ) {
       setMessage("Name and position are required.");
       return;
     }
@@ -406,18 +500,30 @@ export default function Admin() {
             .from("team_members")
             .update(payload)
             .eq("id", editingId)
-        : await supabase.from("team_members").insert(payload);
+        : await supabase
+            .from("team_members")
+            .insert(payload);
 
       if (result.error) {
-        setMessage("Could not save team member: " + result.error.message);
+        setMessage(
+          "Could not save team member: " +
+            result.error.message
+        );
         return;
       }
 
-      setMessage(editingId ? "Team member updated." : "Team member added.");
+      setMessage(
+        editingId
+          ? "Team member updated."
+          : "Team member added."
+      );
+
       resetTeamForm();
       await loadTeam();
     } catch {
-      setMessage("An unexpected error occurred while saving.");
+      setMessage(
+        "An unexpected error occurred while saving."
+      );
     } finally {
       setBusy(false);
     }
@@ -433,7 +539,9 @@ export default function Admin() {
       .eq("id", member.id);
 
     if (error) {
-      setMessage("Could not update team member: " + error.message);
+      setMessage(
+        "Could not update team member: " + error.message
+      );
       return;
     }
 
@@ -461,11 +569,15 @@ export default function Admin() {
       .eq("id", member.id);
 
     if (error) {
-      setMessage("Could not delete team member: " + error.message);
+      setMessage(
+        "Could not delete team member: " + error.message
+      );
       return;
     }
 
-    if (editingId === member.id) resetTeamForm();
+    if (editingId === member.id) {
+      resetTeamForm();
+    }
 
     setMessage("Team member deleted.");
     await loadTeam();
@@ -484,11 +596,15 @@ export default function Admin() {
     );
   }
 
-  const published = items.filter((item) => item.status === "published");
+  const published = items.filter(
+    (item) => item.status === "published"
+  );
 
   const featured = published
     .filter((item) => item.is_featured)
-    .sort((a, b) => a.featured_order - b.featured_order);
+    .sort(
+      (a, b) => a.featured_order - b.featured_order
+    );
 
   const pendingCount = items.filter(
     (item) => item.status === "pending"
@@ -498,7 +614,9 @@ export default function Admin() {
     <main className="admin-page">
       <header className="admin-heading">
         <div>
-          <p className="eyebrow">Economic Policy Lab · Administration</p>
+          <p className="eyebrow">
+            Economic Policy Lab · Administration
+          </p>
           <h1>Editorial dashboard</h1>
           <p>Signed in as {identity}</p>
         </div>
@@ -537,24 +655,41 @@ export default function Admin() {
         </div>
       </section>
 
-      <nav className="editor-tabs" aria-label="Editor sections">
+      <nav
+        className="editor-tabs"
+        aria-label="Editor sections"
+      >
         <button
           type="button"
-          className={tab === "articles" ? "editor-tab active" : "editor-tab"}
+          className={
+            tab === "articles"
+              ? "editor-tab active"
+              : "editor-tab"
+          }
           onClick={() => setTab("articles")}
         >
           Articles
         </button>
+
         <button
           type="button"
-          className={tab === "highlights" ? "editor-tab active" : "editor-tab"}
+          className={
+            tab === "highlights"
+              ? "editor-tab active"
+              : "editor-tab"
+          }
           onClick={() => setTab("highlights")}
         >
           Homepage Highlights
         </button>
+
         <button
           type="button"
-          className={tab === "teams" ? "editor-tab active" : "editor-tab"}
+          className={
+            tab === "teams"
+              ? "editor-tab active"
+              : "editor-tab"
+          }
           onClick={() => setTab("teams")}
         >
           Our Teams
@@ -571,6 +706,7 @@ export default function Admin() {
         <section className="admin-queue">
           <div className="admin-queue-title">
             <h2>Content queue</h2>
+
             <div className="admin-actions">
               <button
                 type="button"
@@ -578,8 +714,11 @@ export default function Admin() {
                 disabled={busy || pendingCount === 0}
                 onClick={() => void approveAllPending()}
               >
-                {busy ? "Working..." : `Approve All Pending (${pendingCount})`}
+                {busy
+                  ? "Working..."
+                  : `Approve All Pending (${pendingCount})`}
               </button>
+
               <button
                 type="button"
                 className="text-button"
@@ -602,17 +741,20 @@ export default function Admin() {
                   <th>Actions</th>
                 </tr>
               </thead>
+
               <tbody>
                 {items.map((item) => (
                   <tr key={item.id}>
                     <td>{item.content_type || "Article"}</td>
                     <td>{item.title || "Untitled"}</td>
                     <td>{item.author_name || "EPL Member"}</td>
+
                     <td>
                       <span className="status-pill">
                         {item.status || "draft"}
                       </span>
                     </td>
+
                     <td>
                       <div className="admin-row-actions">
                         <Link
@@ -628,16 +770,20 @@ export default function Admin() {
                               type="button"
                               disabled={busy}
                               onClick={() =>
-                                void changeStatus(item, "published")
+                                void approveArticle(item)
                               }
                             >
                               Approve
                             </button>
+
                             <button
                               type="button"
                               disabled={busy}
                               onClick={() =>
-                                void changeStatus(item, "rejected")
+                                void changeStatus(
+                                  item,
+                                  "rejected"
+                                )
                               }
                             >
                               Reject
@@ -649,17 +795,26 @@ export default function Admin() {
                           <button
                             type="button"
                             disabled={busy}
-                            onClick={() => void changeStatus(item, "archived")}
+                            onClick={() =>
+                              void changeStatus(
+                                item,
+                                "archived"
+                              )
+                            }
                           >
                             Archive
                           </button>
                         )}
 
-                        {["archived", "rejected"].includes(item.status || "") && (
+                        {["archived", "rejected"].includes(
+                          item.status || ""
+                        ) && (
                           <button
                             type="button"
                             disabled={busy}
-                            onClick={() => void changeStatus(item, "draft")}
+                            onClick={() =>
+                              void changeStatus(item, "draft")
+                            }
                           >
                             Restore
                           </button>
@@ -670,7 +825,12 @@ export default function Admin() {
                             type="button"
                             className="danger-action"
                             disabled={busy}
-                            onClick={() => void changeStatus(item, "deleted")}
+                            onClick={() =>
+                              void changeStatus(
+                                item,
+                                "deleted"
+                              )
+                            }
                           >
                             Delete
                           </button>
@@ -697,10 +857,11 @@ export default function Admin() {
             <div>
               <h2>Homepage Highlights</h2>
               <p>
-                Select published articles to display in the homepage Featured
-                Commentary section.
+                Select published articles to display in the
+                homepage Featured Commentary section.
               </p>
             </div>
+
             <button
               type="button"
               className="text-button"
@@ -711,8 +872,8 @@ export default function Admin() {
           </div>
 
           <p className="admin-footnote">
-            Enable Highlights for an article, then assign its display order.
-            Smaller numbers appear first.
+            Enable Highlights for an article, then assign its
+            display order. Smaller numbers appear first.
           </p>
 
           <div className="admin-table-wrap">
@@ -725,23 +886,30 @@ export default function Admin() {
                   <th>Order</th>
                 </tr>
               </thead>
+
               <tbody>
                 {published.map((item) => (
                   <tr key={item.id}>
                     <td>{item.title || "Untitled"}</td>
                     <td>{item.author_name || "EPL Member"}</td>
+
                     <td>
                       <label className="featured-toggle">
                         <input
                           type="checkbox"
                           checked={Boolean(item.is_featured)}
-                          onChange={() => void toggleFeatured(item)}
+                          onChange={() =>
+                            void toggleFeatured(item)
+                          }
                         />
                         <span>
-                          {item.is_featured ? "Featured" : "Not featured"}
+                          {item.is_featured
+                            ? "Featured"
+                            : "Not featured"}
                         </span>
                       </label>
                     </td>
+
                     <td>
                       <input
                         aria-label={`Display order for ${item.title || "article"}`}
@@ -751,16 +919,21 @@ export default function Admin() {
                         defaultValue={item.featured_order || 1}
                         disabled={!item.is_featured}
                         onBlur={(event) =>
-                          void saveFeaturedOrder(item, event.currentTarget.value)
+                          void saveFeaturedOrder(
+                            item,
+                            event.currentTarget.value
+                          )
                         }
                       />
                     </td>
                   </tr>
                 ))}
+
                 {published.length === 0 && (
                   <tr>
                     <td colSpan={4}>
-                      No published articles are available for Highlights.
+                      No published articles are available for
+                      Highlights.
                     </td>
                   </tr>
                 )}
@@ -774,22 +947,36 @@ export default function Admin() {
         <section className="admin-queue">
           <div className="admin-queue-title">
             <div>
-              <h2>{editingId ? "Edit team member" : "Add a team member"}</h2>
-              <p>Manage the people displayed on the public Our Teams page.</p>
+              <h2>
+                {editingId
+                  ? "Edit team member"
+                  : "Add a team member"}
+              </h2>
+              <p>
+                Manage the people displayed on the public Our
+                Teams page.
+              </p>
             </div>
+
             <Link to="/team" className="text-button">
               View Our Teams
             </Link>
           </div>
 
-          <form className="team-editor-form" onSubmit={saveTeamMember}>
+          <form
+            className="team-editor-form"
+            onSubmit={saveTeamMember}
+          >
             <label>
               Full name *
               <input
                 required
                 value={teamForm.name}
                 onChange={(event) =>
-                  setTeamForm({ ...teamForm, name: event.target.value })
+                  setTeamForm({
+                    ...teamForm,
+                    name: event.target.value,
+                  })
                 }
               />
             </label>
@@ -801,7 +988,10 @@ export default function Admin() {
                 value={teamForm.role_title}
                 placeholder="e.g. Founder, Overall Head, Research Lead"
                 onChange={(event) =>
-                  setTeamForm({ ...teamForm, role_title: event.target.value })
+                  setTeamForm({
+                    ...teamForm,
+                    role_title: event.target.value,
+                  })
                 }
               />
             </label>
@@ -813,12 +1003,18 @@ export default function Admin() {
                 onChange={(event) =>
                   setTeamForm({
                     ...teamForm,
-                    section: event.target.value as "board" | "member",
+                    section: event.target.value as
+                      | "board"
+                      | "member",
                   })
                 }
               >
-                <option value="board">Leadership / Board</option>
-                <option value="member">Division / Team member</option>
+                <option value="board">
+                  Leadership / Board
+                </option>
+                <option value="member">
+                  Division / Team member
+                </option>
               </select>
             </label>
 
@@ -843,7 +1039,10 @@ export default function Admin() {
                 value={teamForm.bio}
                 placeholder="Write a short professional description."
                 onChange={(event) =>
-                  setTeamForm({ ...teamForm, bio: event.target.value })
+                  setTeamForm({
+                    ...teamForm,
+                    bio: event.target.value,
+                  })
                 }
               />
             </label>
@@ -854,7 +1053,9 @@ export default function Admin() {
                 type="file"
                 accept="image/*"
                 disabled={busy}
-                onChange={(event) => void uploadTeamImage(event)}
+                onChange={(event) =>
+                  void uploadTeamImage(event)
+                }
               />
               <span className="admin-footnote">
                 Image files only, maximum 5 MB.
@@ -863,12 +1064,19 @@ export default function Admin() {
 
             {teamForm.image_url && (
               <div className="team-photo-preview team-form-wide">
-                <img src={teamForm.image_url} alt="Team member preview" />
+                <img
+                  src={teamForm.image_url}
+                  alt="Team member preview"
+                />
+
                 <button
                   type="button"
                   className="text-button"
                   onClick={() =>
-                    setTeamForm({ ...teamForm, image_url: "" })
+                    setTeamForm({
+                      ...teamForm,
+                      image_url: "",
+                    })
                   }
                 >
                   Remove photo
@@ -931,6 +1139,7 @@ export default function Admin() {
 
           <div className="admin-queue-title team-list-heading">
             <h2>Existing team members</h2>
+
             <button
               type="button"
               className="text-button"
@@ -950,42 +1159,62 @@ export default function Admin() {
                   <th>Actions</th>
                 </tr>
               </thead>
+
               <tbody>
                 {team.map((member) => (
                   <tr key={member.id}>
                     <td>
                       <div className="team-admin-person">
                         {member.image_url && (
-                          <img src={member.image_url} alt="" />
+                          <img
+                            src={member.image_url}
+                            alt=""
+                          />
                         )}
+
                         <div>
                           <strong>{member.name}</strong>
                           <span>{member.role_title}</span>
                         </div>
                       </div>
                     </td>
+
                     <td>
-                      {member.section === "board" ? "Leadership" : "Division"}
+                      {member.section === "board"
+                        ? "Leadership"
+                        : "Division"}
                     </td>
-                    <td>{member.is_active ? "Visible" : "Hidden"}</td>
+
+                    <td>
+                      {member.is_active ? "Visible" : "Hidden"}
+                    </td>
+
                     <td>
                       <div className="admin-row-actions">
                         <button
                           type="button"
-                          onClick={() => editTeamMember(member)}
+                          onClick={() =>
+                            editTeamMember(member)
+                          }
                         >
                           Edit
                         </button>
+
                         <button
                           type="button"
-                          onClick={() => void toggleTeamMember(member)}
+                          onClick={() =>
+                            void toggleTeamMember(member)
+                          }
                         >
                           {member.is_active ? "Hide" : "Show"}
                         </button>
+
                         <button
                           type="button"
                           className="danger-action"
-                          onClick={() => void deleteTeamMember(member)}
+                          onClick={() =>
+                            void deleteTeamMember(member)
+                          }
                         >
                           Delete
                         </button>
@@ -993,9 +1222,12 @@ export default function Admin() {
                     </td>
                   </tr>
                 ))}
+
                 {team.length === 0 && (
                   <tr>
-                    <td colSpan={4}>No team members have been added yet.</td>
+                    <td colSpan={4}>
+                      No team members have been added yet.
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -1005,9 +1237,10 @@ export default function Admin() {
       )}
 
       <p className="admin-footnote">
-        Admin access is checked using the authenticated email and
-        profiles.role. Keep Supabase Row Level Security enabled and configure
-        policies to protect privileged database operations.
+        Admin access is checked using the authenticated email
+        and profiles.role. Keep Supabase Row Level Security
+        enabled and configure policies to protect privileged
+        database operations.
       </p>
     </main>
   );
