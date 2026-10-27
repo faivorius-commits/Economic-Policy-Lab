@@ -13,6 +13,7 @@ import EditorialEditor from "./pages/EditorialEditor";
 import TeamEditor from "./pages/TeamEditor";
 import Team from "./pages/Team";
 import AdminArticleEdit from "./pages/AdminArticleEdit";
+import MemberWrite from "./pages/MemberWrite";
 
 type PlaceholderPageProps = { title: string; description: string };
 function PlaceholderPage({ title, description }: PlaceholderPageProps) {
