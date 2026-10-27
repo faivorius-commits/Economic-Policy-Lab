@@ -10,6 +10,27 @@ type ArticleStatus =
   | "rejected"
   | "archived";
 
+// Membersihkan HTML agar tag tidak tampil sebagai teks mentah.
+function cleanArticleBody(html: string): string {
+  if (!html) return "";
+
+  const paragraphs = html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(div|p|h[1-6]|li)>/gi, "\n\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;|&#160;|&#xA0;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/\r\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  return paragraphs;
+}
+
 export default function MemberWrite() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -101,7 +122,10 @@ export default function MemberWrite() {
         setCategory(data.category || "");
         setType(data.content_type || "article");
         setCover(data.cover_image_url || "");
-        setBody(data.content || "");
+
+        // Clean HTML before displaying it in the editor.
+        setBody(cleanArticleBody(data.content || ""));
+
         setOriginalStatus(
           (data.status || "draft") as ArticleStatus
         );
@@ -165,7 +189,9 @@ export default function MemberWrite() {
     setBusy(false);
 
     if (result.error) {
-      setMessage("Could not save article: " + result.error.message);
+      setMessage(
+        "Could not save article: " + result.error.message
+      );
       return;
     }
 
@@ -199,7 +225,10 @@ export default function MemberWrite() {
     return (
       <main className="member-page">
         <p role="status">{message}</p>
-        <Link className="back-link" to={isAdmin ? "/admin" : "/member"}>
+        <Link
+          className="back-link"
+          to={isAdmin ? "/admin" : "/member"}
+        >
           ← Back
         </Link>
       </main>
