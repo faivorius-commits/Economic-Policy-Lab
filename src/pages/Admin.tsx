@@ -125,6 +125,14 @@ export default function Admin() {
         return;
       }
 
+      if (
+      session.user.email?.trim().toLowerCase() !==
+      "members@economicpolicylab.org"
+      ) {
+      navigate("/", { replace: true });
+      return;
+}
+      
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("role,display_name")
