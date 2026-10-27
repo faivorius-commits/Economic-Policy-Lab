@@ -25,16 +25,12 @@ export default function Header() {
           />
 
           <span className="brand-name">
-  <span className="brand-letter-e">E</span>
-  <span className="brand-rest">conomic </span>
-  <span className="brand-letter-p">P</span>
-  <span className="brand-rest">olicy </span>
-  <span className="brand-letter-l">L</span>
-  <span className="brand-rest">ab</span>
-</span>
-
-              {" "}Economic Policy Lab
-            </span>
+            <span className="brand-letter-e">E</span>
+            <span className="brand-rest">conomic </span>
+            <span className="brand-letter-p">P</span>
+            <span className="brand-rest">olicy </span>
+            <span className="brand-letter-l">L</span>
+            <span className="brand-rest">ab</span>
           </span>
         </Link>
 
