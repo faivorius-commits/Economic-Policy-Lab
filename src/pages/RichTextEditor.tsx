@@ -16,44 +16,83 @@ export default function RichTextEditor({
 
   React.useEffect(() => {
     const editor = editorRef.current;
+
     if (editor && editor.innerHTML !== value) {
       editor.innerHTML = value;
     }
   }, [value]);
 
   function applyFormat(command: string, argument?: string) {
-    editorRef.current?.focus();
+    const editor = editorRef.current;
+
+    if (!editor) return;
+
+    editor.focus();
     document.execCommand(command, false, argument);
-    if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
-    }
+
+    onChange(editor.innerHTML);
   }
 
   return (
     <div className="rich-text-editor">
-      <div className="rich-text-toolbar">
-        <button type="button" onClick={() => applyFormat("formatBlock", "P")}>
+      <div
+        className="rich-text-toolbar"
+        role="toolbar"
+        aria-label="Article formatting tools"
+      >
+        <button
+          type="button"
+          onClick={() => applyFormat("formatBlock", "P")}
+        >
           Paragraph
         </button>
-        <button type="button" onClick={() => applyFormat("formatBlock", "H2")}>
+
+        <button
+          type="button"
+          onClick={() => applyFormat("formatBlock", "H2")}
+        >
           H2
         </button>
-        <button type="button" onClick={() => applyFormat("formatBlock", "H3")}>
+
+        <button
+          type="button"
+          onClick={() => applyFormat("formatBlock", "H3")}
+        >
           H3
         </button>
-        <button type="button" onClick={() => applyFormat("bold")}>
+
+        <button
+          type="button"
+          onClick={() => applyFormat("bold")}
+        >
           Bold
         </button>
-        <button type="button" onClick={() => applyFormat("italic")}>
+
+        <button
+          type="button"
+          onClick={() => applyFormat("italic")}
+        >
           Italic
         </button>
-        <button type="button" onClick={() => applyFormat("insertUnorderedList")}>
+
+        <button
+          type="button"
+          onClick={() => applyFormat("insertUnorderedList")}
+        >
           • List
         </button>
-        <button type="button" onClick={() => applyFormat("insertOrderedList")}>
+
+        <button
+          type="button"
+          onClick={() => applyFormat("insertOrderedList")}
+        >
           1. List
         </button>
-        <button type="button" onClick={() => applyFormat("insertHorizontalRule")}>
+
+        <button
+          type="button"
+          onClick={() => applyFormat("insertHorizontalRule")}
+        >
           Divider
         </button>
       </div>
@@ -64,8 +103,11 @@ export default function RichTextEditor({
         contentEditable
         suppressContentEditableWarning
         data-placeholder={placeholder}
-        onInput={(event) => onChange(event.currentTarget.innerHTML)}
+        onInput={(event) => {
+          onChange(event.currentTarget.innerHTML);
+        }}
         role="textbox"
+        aria-label="Article body"
         aria-multiline="true"
       />
     </div>
