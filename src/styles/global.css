@@ -1813,3 +1813,71 @@ textarea:focus-visible, select:focus-visible {
   cursor: not-allowed;
 }
 
+
+/* Fix Admin Approve and Reject buttons */
+.admin-page .admin-table {
+  min-width: 900px;
+  table-layout: auto;
+}
+
+.admin-page .admin-table th:last-child,
+.admin-page .admin-table td:last-child {
+  min-width: 250px;
+}
+
+.admin-page .admin-row-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-start !important;
+  align-items: center;
+  gap: 8px !important;
+  min-width: 220px;
+}
+
+.admin-page .admin-row-actions .admin-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  margin: 0 !important;
+}
+
+.admin-page .admin-row-actions button.approve-button,
+.admin-page .admin-row-actions button.reject-button {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1;
+  position: static;
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 10px 12px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-page .admin-row-actions button.approve-button {
+  background: #facc15 !important;
+  border-color: #eab308 !important;
+  color: #111827 !important;
+}
+
+.admin-page .admin-row-actions button.reject-button {
+  background: #2563eb !important;
+  border-color: #1d4ed8 !important;
+  color: #ffffff !important;
+}
+
+@media (max-width: 760px) {
+  .admin-page .admin-queue {
+    overflow: hidden;
+    padding: 14px;
+  }
+
+  .admin-page .admin-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
