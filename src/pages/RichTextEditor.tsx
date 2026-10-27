@@ -90,12 +90,21 @@ export default function RichTextEditor({
         </button>
 
         <button
+        type="button"
+        style={buttonStyle}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => runCommand("justifyFull")}
+        >
+        Justify
+        </button>
+        <button
           type="button"
           onClick={() => applyFormat("insertHorizontalRule")}
         >
           Divider
         </button>
       </div>
+      
 
       <div
         ref={editorRef}
