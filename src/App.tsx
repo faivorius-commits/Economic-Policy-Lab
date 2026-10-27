@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import Member from "./pages/Member";
+import MemberWrite from "./pages/MemberWrite";
 import EditorialEditor from "./pages/EditorialEditor";
 import TeamEditor from "./pages/TeamEditor";
 import Team from "./pages/Team";
@@ -37,6 +38,7 @@ export default function App() {
     <Route path="/editor/team" element={<TeamEditor />} />
     <Route path="/editor/:id" element={<EditorialEditor />} />
     <Route path="/member" element={<Member />} />
+    <Route path="/member/write" element={<MemberWrite />}/>
     <Route path="/team" element={<Team />} />
     <Route path="*" element={<NotFoundPage />} />
     <Route path="/admin/article" element={<AdminArticleEdit />} />
