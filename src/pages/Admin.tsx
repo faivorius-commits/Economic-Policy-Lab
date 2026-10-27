@@ -58,6 +58,8 @@ const emptyTeamForm: TeamForm = {
   instagram_url: "",
 };
 
+const ADMIN_EMAIL = "members@economicpolicylab.org";
+
 export default function Admin() {
   const navigate = useNavigate();
 
@@ -87,7 +89,6 @@ export default function Admin() {
     }
 
     setItems((data ?? []) as Article[]);
-    setMessage("");
   }, []);
 
   const loadTeam = useCallback(async () => {
@@ -104,7 +105,6 @@ export default function Admin() {
     }
 
     setTeam((data ?? []) as TeamMember[]);
-    setMessage("");
   }, []);
 
   const refreshAll = useCallback(async () => {
@@ -126,19 +126,17 @@ export default function Admin() {
       }
 
       if (
-        session.user.email?.trim().toLowerCase() !==
-        "members@economicpolicylab.org"
+        session.user.email?.trim().toLowerCase() !== ADMIN_EMAIL
       ) {
         navigate("/", { replace: true });
         return;
       }
 
-      const { data: profile, error: profileError } =
-        await supabase
-          .from("profiles")
-          .select("role,display_name")
-          .eq("id", session.user.id)
-          .maybeSingle();
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role,display_name")
+        .eq("id", session.user.id)
+        .maybeSingle();
 
       if (!active) return;
 
@@ -148,13 +146,12 @@ export default function Admin() {
       }
 
       setIdentity(
-        profile.display_name ||
-          session.user.email ||
-          "Administrator"
+        profile.display_name || session.user.email || "Administrator"
       );
-
       setReady(true);
       await refreshAll();
+
+      if (active) setMessage("");
     }
 
     void init();
@@ -163,6 +160,52 @@ export default function Admin() {
       active = false;
     };
   }, [navigate, refreshAll]);
+
+  async function approveArticle(item: Article) {
+    if (
+      !window.confirm(
+        `Approve and publish "${item.title || "Untitled"}"?`
+      )
+    ) {
+      return;
+    }
+
+    setBusy(true);
+    setMessage("Publishing article...");
+
+    try {
+      const now = new Date().toISOString();
+
+      const { data, error } = await supabase
+        .from("articles")
+        .update({
+          status: "published",
+          published_at: now,
+          updated_at: now,
+        })
+        .eq("id", item.id)
+        .select("id");
+
+      if (error) {
+        setMessage("Could not approve article: " + error.message);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        setMessage(
+          "Article was not updated. Check your Supabase permissions."
+        );
+        return;
+      }
+
+      setMessage("Article approved and published successfully.");
+      await loadArticles();
+    } catch {
+      setMessage("An unexpected error occurred while approving.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function changeStatus(item: Article, status: string) {
     if (
@@ -176,91 +219,45 @@ export default function Admin() {
 
     setBusy(true);
 
-    const now = new Date().toISOString();
+    try {
+      const now = new Date().toISOString();
 
-    const result =
-      status === "deleted"
-        ? await supabase
-            .from("articles")
-            .delete()
-            .eq("id", item.id)
-        : await supabase
-            .from("articles")
-            .update({
-              status,
-              updated_at: now,
-              ...(status === "published"
-                ? { published_at: now }
-                : {}),
-            })
-            .eq("id", item.id);
+      const result =
+        status === "deleted"
+          ? await supabase
+              .from("articles")
+              .delete()
+              .eq("id", item.id)
+          : await supabase
+              .from("articles")
+              .update({
+                status,
+                updated_at: now,
+                ...(status === "published"
+                  ? { published_at: now }
+                  : {}),
+              })
+              .eq("id", item.id);
 
-    setBusy(false);
+      if (result.error) {
+        setMessage("Could not update article: " + result.error.message);
+        return;
+      }
 
-    if (result.error) {
       setMessage(
-        "Could not update article: " + result.error.message
+        status === "deleted"
+          ? "Article deleted."
+          : `Article status changed to ${status}.`
       );
-      return;
-    }
 
-    setMessage(
-      status === "deleted"
-        ? "Article deleted."
-        : `Article status changed to ${status}.`
-    );
-
-    await loadArticles();
-  }
-
-  // Approve one pending article.
-  async function approveArticle(item: Article) {
-    if (
-      !window.confirm(
-        `Approve and publish "${item.title || "Untitled"}"?`
-      )
-    ) {
-      return;
-    }
-
-    setBusy(true);
-    setMessage("Publishing article...");
-
-    const now = new Date().toISOString();
-
-    const { data, error } = await supabase
-      .from("articles")
-      .update({
-        status: "published",
-        published_at: now,
-        updated_at: now,
-      })
-      .eq("id", item.id)
-      .eq("status", "pending")
-      .select("id");
-
-    setBusy(false);
-
-    if (error) {
-      setMessage(
-        "Could not approve article: " + error.message
-      );
-      return;
-    }
-
-    if (!data || data.length === 0) {
-      setMessage(
-        "Article was not updated. Check its status and your Supabase permissions."
-      );
       await loadArticles();
-      return;
+    } catch {
+      setMessage("An unexpected error occurred while updating.");
+    } finally {
+      setBusy(false);
     }
-
-    setMessage("Article approved and published successfully.");
-    await loadArticles();
   }
 
-  // Approve all pending articles.
   async function approveAllPending() {
     const pending = items.filter(
       (item) => item.status === "pending"
@@ -282,28 +279,30 @@ export default function Admin() {
     setBusy(true);
     setMessage("Publishing pending articles...");
 
-    const now = new Date().toISOString();
+    try {
+      const now = new Date().toISOString();
 
-    const { error } = await supabase
-      .from("articles")
-      .update({
-        status: "published",
-        published_at: now,
-        updated_at: now,
-      })
-      .eq("status", "pending");
+      const { error } = await supabase
+        .from("articles")
+        .update({
+          status: "published",
+          published_at: now,
+          updated_at: now,
+        })
+        .eq("status", "pending");
 
-    setBusy(false);
+      if (error) {
+        setMessage("Could not approve articles: " + error.message);
+        return;
+      }
 
-    if (error) {
-      setMessage(
-        "Could not approve articles: " + error.message
-      );
-      return;
+      setMessage("Pending articles have been published.");
+      await loadArticles();
+    } catch {
+      setMessage("An unexpected error occurred while publishing.");
+    } finally {
+      setBusy(false);
     }
-
-    setMessage("Pending articles have been published.");
-    await loadArticles();
   }
 
   async function toggleFeatured(item: Article) {
@@ -312,35 +311,37 @@ export default function Admin() {
     const nextOrder = nextValue
       ? Math.max(
           0,
-          ...items.map(
-            (article) => article.featured_order || 0
-          )
+          ...items.map((article) => article.featured_order || 0)
         ) + 1
       : 0;
 
-    const { error } = await supabase
-      .from("articles")
-      .update({
-        is_featured: nextValue,
-        featured_order: nextOrder,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", item.id);
+    setBusy(true);
 
-    if (error) {
+    try {
+      const { error } = await supabase
+        .from("articles")
+        .update({
+          is_featured: nextValue,
+          featured_order: nextOrder,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", item.id);
+
+      if (error) {
+        setMessage("Could not update Highlights: " + error.message);
+        return;
+      }
+
       setMessage(
-        "Could not update Highlights: " + error.message
+        nextValue
+          ? "Article added to Homepage Highlights."
+          : "Article removed from Homepage Highlights."
       );
-      return;
+
+      await loadArticles();
+    } finally {
+      setBusy(false);
     }
-
-    setMessage(
-      nextValue
-        ? "Article added to Homepage Highlights."
-        : "Article removed from Homepage Highlights."
-    );
-
-    await loadArticles();
   }
 
   async function saveFeaturedOrder(
@@ -350,9 +351,7 @@ export default function Admin() {
     const order = Number(rawValue);
 
     if (!Number.isInteger(order) || order < 1) {
-      setMessage(
-        "Highlight order must be a positive whole number."
-      );
+      setMessage("Highlight order must be a positive whole number.");
       return;
     }
 
@@ -363,21 +362,27 @@ export default function Admin() {
       return;
     }
 
-    const { error } = await supabase
-      .from("articles")
-      .update({
-        featured_order: order,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", item.id);
+    setBusy(true);
 
-    if (error) {
-      setMessage("Could not save order: " + error.message);
-      return;
+    try {
+      const { error } = await supabase
+        .from("articles")
+        .update({
+          featured_order: order,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", item.id);
+
+      if (error) {
+        setMessage("Could not save order: " + error.message);
+        return;
+      }
+
+      setMessage("Highlight order saved.");
+      await loadArticles();
+    } finally {
+      setBusy(false);
     }
-
-    setMessage("Highlight order saved.");
-    await loadArticles();
   }
 
   function editTeamMember(member: TeamMember) {
@@ -458,9 +463,7 @@ export default function Admin() {
         "Photo uploaded. Save the team member to keep the changes."
       );
     } catch {
-      setMessage(
-        "An unexpected error occurred while uploading."
-      );
+      setMessage("An unexpected error occurred while uploading.");
     } finally {
       setBusy(false);
       input.value = "";
@@ -472,10 +475,7 @@ export default function Admin() {
   ) {
     event.preventDefault();
 
-    if (
-      !teamForm.name.trim() ||
-      !teamForm.role_title.trim()
-    ) {
+    if (!teamForm.name.trim() || !teamForm.role_title.trim()) {
       setMessage("Name and position are required.");
       return;
     }
@@ -500,58 +500,55 @@ export default function Admin() {
             .from("team_members")
             .update(payload)
             .eq("id", editingId)
-        : await supabase
-            .from("team_members")
-            .insert(payload);
+        : await supabase.from("team_members").insert(payload);
 
       if (result.error) {
         setMessage(
-          "Could not save team member: " +
-            result.error.message
+          "Could not save team member: " + result.error.message
         );
         return;
       }
 
       setMessage(
-        editingId
-          ? "Team member updated."
-          : "Team member added."
+        editingId ? "Team member updated." : "Team member added."
       );
 
       resetTeamForm();
       await loadTeam();
     } catch {
-      setMessage(
-        "An unexpected error occurred while saving."
-      );
+      setMessage("An unexpected error occurred while saving.");
     } finally {
       setBusy(false);
     }
   }
 
   async function toggleTeamMember(member: TeamMember) {
-    const { error } = await supabase
-      .from("team_members")
-      .update({
-        is_active: !member.is_active,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", member.id);
+    setBusy(true);
 
-    if (error) {
+    try {
+      const { error } = await supabase
+        .from("team_members")
+        .update({
+          is_active: !member.is_active,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", member.id);
+
+      if (error) {
+        setMessage("Could not update team member: " + error.message);
+        return;
+      }
+
       setMessage(
-        "Could not update team member: " + error.message
+        member.is_active
+          ? "Team member hidden from the public page."
+          : "Team member is now visible on the public page."
       );
-      return;
+
+      await loadTeam();
+    } finally {
+      setBusy(false);
     }
-
-    setMessage(
-      member.is_active
-        ? "Team member hidden from the public page."
-        : "Team member is now visible on the public page."
-    );
-
-    await loadTeam();
   }
 
   async function deleteTeamMember(member: TeamMember) {
@@ -563,24 +560,26 @@ export default function Admin() {
       return;
     }
 
-    const { error } = await supabase
-      .from("team_members")
-      .delete()
-      .eq("id", member.id);
+    setBusy(true);
 
-    if (error) {
-      setMessage(
-        "Could not delete team member: " + error.message
-      );
-      return;
+    try {
+      const { error } = await supabase
+        .from("team_members")
+        .delete()
+        .eq("id", member.id);
+
+      if (error) {
+        setMessage("Could not delete team member: " + error.message);
+        return;
+      }
+
+      if (editingId === member.id) resetTeamForm();
+
+      setMessage("Team member deleted.");
+      await loadTeam();
+    } finally {
+      setBusy(false);
     }
-
-    if (editingId === member.id) {
-      resetTeamForm();
-    }
-
-    setMessage("Team member deleted.");
-    await loadTeam();
   }
 
   async function logout() {
@@ -602,9 +601,7 @@ export default function Admin() {
 
   const featured = published
     .filter((item) => item.is_featured)
-    .sort(
-      (a, b) => a.featured_order - b.featured_order
-    );
+    .sort((a, b) => a.featured_order - b.featured_order);
 
   const pendingCount = items.filter(
     (item) => item.status === "pending"
@@ -655,17 +652,10 @@ export default function Admin() {
         </div>
       </section>
 
-      <nav
-        className="editor-tabs"
-        aria-label="Editor sections"
-      >
+      <nav className="editor-tabs" aria-label="Editor sections">
         <button
           type="button"
-          className={
-            tab === "articles"
-              ? "editor-tab active"
-              : "editor-tab"
-          }
+          className={tab === "articles" ? "editor-tab active" : "editor-tab"}
           onClick={() => setTab("articles")}
         >
           Articles
@@ -673,11 +663,7 @@ export default function Admin() {
 
         <button
           type="button"
-          className={
-            tab === "highlights"
-              ? "editor-tab active"
-              : "editor-tab"
-          }
+          className={tab === "highlights" ? "editor-tab active" : "editor-tab"}
           onClick={() => setTab("highlights")}
         >
           Homepage Highlights
@@ -685,11 +671,7 @@ export default function Admin() {
 
         <button
           type="button"
-          className={
-            tab === "teams"
-              ? "editor-tab active"
-              : "editor-tab"
-          }
+          className={tab === "teams" ? "editor-tab active" : "editor-tab"}
           onClick={() => setTab("teams")}
         >
           Our Teams
@@ -764,57 +746,41 @@ export default function Admin() {
                           Edit
                         </Link>
 
-                        {item.status === "pending" && (
-                          <>
-                            <button
-                              type="button"
-                              disabled={busy}
-                              onClick={() =>
-                                void approveArticle(item)
-                              }
-                            >
-                              Approve
-                            </button>
+                        <div className="admin-actions">
+                          <button
+                            type="button"
+                            className="approve-button"
+                            disabled={busy}
+                            onClick={() => void approveArticle(item)}
+                          >
+                            ✓ Approve
+                          </button>
 
-                            <button
-                              type="button"
-                              disabled={busy}
-                              onClick={() =>
-                                void changeStatus(
-                                  item,
-                                  "rejected"
-                                )
-                              }
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
+                          <button
+                            type="button"
+                            className="reject-button"
+                            disabled={busy}
+                            onClick={() => void changeStatus(item, "rejected")}
+                          >
+                            ✕ Reject
+                          </button>
+                        </div>
 
                         {item.status === "published" && (
                           <button
                             type="button"
                             disabled={busy}
-                            onClick={() =>
-                              void changeStatus(
-                                item,
-                                "archived"
-                              )
-                            }
+                            onClick={() => void changeStatus(item, "archived")}
                           >
                             Archive
                           </button>
                         )}
 
-                        {["archived", "rejected"].includes(
-                          item.status || ""
-                        ) && (
+                        {["archived", "rejected"].includes(item.status || "") && (
                           <button
                             type="button"
                             disabled={busy}
-                            onClick={() =>
-                              void changeStatus(item, "draft")
-                            }
+                            onClick={() => void changeStatus(item, "draft")}
                           >
                             Restore
                           </button>
@@ -825,12 +791,7 @@ export default function Admin() {
                             type="button"
                             className="danger-action"
                             disabled={busy}
-                            onClick={() =>
-                              void changeStatus(
-                                item,
-                                "deleted"
-                              )
-                            }
+                            onClick={() => void changeStatus(item, "deleted")}
                           >
                             Delete
                           </button>
@@ -865,6 +826,7 @@ export default function Admin() {
             <button
               type="button"
               className="text-button"
+              disabled={busy}
               onClick={() => void loadArticles()}
             >
               Refresh
@@ -872,8 +834,8 @@ export default function Admin() {
           </div>
 
           <p className="admin-footnote">
-            Enable Highlights for an article, then assign its
-            display order. Smaller numbers appear first.
+            Enable Highlights for an article, then assign its display
+            order. Smaller numbers appear first.
           </p>
 
           <div className="admin-table-wrap">
@@ -898,14 +860,11 @@ export default function Admin() {
                         <input
                           type="checkbox"
                           checked={Boolean(item.is_featured)}
-                          onChange={() =>
-                            void toggleFeatured(item)
-                          }
+                          disabled={busy}
+                          onChange={() => void toggleFeatured(item)}
                         />
                         <span>
-                          {item.is_featured
-                            ? "Featured"
-                            : "Not featured"}
+                          {item.is_featured ? "Featured" : "Not featured"}
                         </span>
                       </label>
                     </td>
@@ -917,12 +876,9 @@ export default function Admin() {
                         type="number"
                         min="1"
                         defaultValue={item.featured_order || 1}
-                        disabled={!item.is_featured}
+                        disabled={!item.is_featured || busy}
                         onBlur={(event) =>
-                          void saveFeaturedOrder(
-                            item,
-                            event.currentTarget.value
-                          )
+                          void saveFeaturedOrder(item, event.currentTarget.value)
                         }
                       />
                     </td>
@@ -932,8 +888,7 @@ export default function Admin() {
                 {published.length === 0 && (
                   <tr>
                     <td colSpan={4}>
-                      No published articles are available for
-                      Highlights.
+                      No published articles are available for Highlights.
                     </td>
                   </tr>
                 )}
@@ -947,14 +902,9 @@ export default function Admin() {
         <section className="admin-queue">
           <div className="admin-queue-title">
             <div>
-              <h2>
-                {editingId
-                  ? "Edit team member"
-                  : "Add a team member"}
-              </h2>
+              <h2>{editingId ? "Edit team member" : "Add a team member"}</h2>
               <p>
-                Manage the people displayed on the public Our
-                Teams page.
+                Manage the people displayed on the public Our Teams page.
               </p>
             </div>
 
@@ -963,20 +913,14 @@ export default function Admin() {
             </Link>
           </div>
 
-          <form
-            className="team-editor-form"
-            onSubmit={saveTeamMember}
-          >
+          <form className="team-editor-form" onSubmit={saveTeamMember}>
             <label>
               Full name *
               <input
                 required
                 value={teamForm.name}
                 onChange={(event) =>
-                  setTeamForm({
-                    ...teamForm,
-                    name: event.target.value,
-                  })
+                  setTeamForm({ ...teamForm, name: event.target.value })
                 }
               />
             </label>
@@ -988,10 +932,7 @@ export default function Admin() {
                 value={teamForm.role_title}
                 placeholder="e.g. Founder, Overall Head, Research Lead"
                 onChange={(event) =>
-                  setTeamForm({
-                    ...teamForm,
-                    role_title: event.target.value,
-                  })
+                  setTeamForm({ ...teamForm, role_title: event.target.value })
                 }
               />
             </label>
@@ -1003,18 +944,12 @@ export default function Admin() {
                 onChange={(event) =>
                   setTeamForm({
                     ...teamForm,
-                    section: event.target.value as
-                      | "board"
-                      | "member",
+                    section: event.target.value as "board" | "member",
                   })
                 }
               >
-                <option value="board">
-                  Leadership / Board
-                </option>
-                <option value="member">
-                  Division / Team member
-                </option>
+                <option value="board">Leadership / Board</option>
+                <option value="member">Division / Team member</option>
               </select>
             </label>
 
@@ -1039,10 +974,7 @@ export default function Admin() {
                 value={teamForm.bio}
                 placeholder="Write a short professional description."
                 onChange={(event) =>
-                  setTeamForm({
-                    ...teamForm,
-                    bio: event.target.value,
-                  })
+                  setTeamForm({ ...teamForm, bio: event.target.value })
                 }
               />
             </label>
@@ -1053,9 +985,7 @@ export default function Admin() {
                 type="file"
                 accept="image/*"
                 disabled={busy}
-                onChange={(event) =>
-                  void uploadTeamImage(event)
-                }
+                onChange={(event) => void uploadTeamImage(event)}
               />
               <span className="admin-footnote">
                 Image files only, maximum 5 MB.
@@ -1064,19 +994,13 @@ export default function Admin() {
 
             {teamForm.image_url && (
               <div className="team-photo-preview team-form-wide">
-                <img
-                  src={teamForm.image_url}
-                  alt="Team member preview"
-                />
+                <img src={teamForm.image_url} alt="Team member preview" />
 
                 <button
                   type="button"
                   className="text-button"
                   onClick={() =>
-                    setTeamForm({
-                      ...teamForm,
-                      image_url: "",
-                    })
+                    setTeamForm({ ...teamForm, image_url: "" })
                   }
                 >
                   Remove photo
@@ -1113,11 +1037,7 @@ export default function Admin() {
             </label>
 
             <div className="team-form-actions team-form-wide">
-              <button
-                type="submit"
-                className="epl-button"
-                disabled={busy}
-              >
+              <button type="submit" className="epl-button" disabled={busy}>
                 {busy
                   ? "Saving..."
                   : editingId
@@ -1143,6 +1063,7 @@ export default function Admin() {
             <button
               type="button"
               className="text-button"
+              disabled={busy}
               onClick={() => void loadTeam()}
             >
               Refresh
@@ -1166,10 +1087,7 @@ export default function Admin() {
                     <td>
                       <div className="team-admin-person">
                         {member.image_url && (
-                          <img
-                            src={member.image_url}
-                            alt=""
-                          />
+                          <img src={member.image_url} alt="" />
                         )}
 
                         <div>
@@ -1180,31 +1098,25 @@ export default function Admin() {
                     </td>
 
                     <td>
-                      {member.section === "board"
-                        ? "Leadership"
-                        : "Division"}
+                      {member.section === "board" ? "Leadership" : "Division"}
                     </td>
 
-                    <td>
-                      {member.is_active ? "Visible" : "Hidden"}
-                    </td>
+                    <td>{member.is_active ? "Visible" : "Hidden"}</td>
 
                     <td>
                       <div className="admin-row-actions">
                         <button
                           type="button"
-                          onClick={() =>
-                            editTeamMember(member)
-                          }
+                          disabled={busy}
+                          onClick={() => editTeamMember(member)}
                         >
                           Edit
                         </button>
 
                         <button
                           type="button"
-                          onClick={() =>
-                            void toggleTeamMember(member)
-                          }
+                          disabled={busy}
+                          onClick={() => void toggleTeamMember(member)}
                         >
                           {member.is_active ? "Hide" : "Show"}
                         </button>
@@ -1212,9 +1124,8 @@ export default function Admin() {
                         <button
                           type="button"
                           className="danger-action"
-                          onClick={() =>
-                            void deleteTeamMember(member)
-                          }
+                          disabled={busy}
+                          onClick={() => void deleteTeamMember(member)}
                         >
                           Delete
                         </button>
@@ -1237,10 +1148,9 @@ export default function Admin() {
       )}
 
       <p className="admin-footnote">
-        Admin access is checked using the authenticated email
-        and profiles.role. Keep Supabase Row Level Security
-        enabled and configure policies to protect privileged
-        database operations.
+        Admin access is checked using the authenticated email and
+        profiles.role. Keep Supabase Row Level Security enabled and
+        configure policies to protect privileged database operations.
       </p>
     </main>
   );
