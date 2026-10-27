@@ -38,5 +38,6 @@ export default function App() {
     <Route path="/member" element={<Member />} />
     <Route path="/team" element={<Team />} />
     <Route path="*" element={<NotFoundPage />} />
+    <Route path="/admin/article" element={<AdminArticleEdit />} />
   </Routes><footer className="site-footer">© 2025 Komunitas Ekonom Muda Indonesia / Economic Policy Lab. All rights reserved.</footer></div>;
 }
