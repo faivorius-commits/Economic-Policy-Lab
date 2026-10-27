@@ -13,8 +13,25 @@ export default function Header() {
   return (
     <header className="site-header">
       <div className="header-inner">
-        <Link to="/" className="brand">
-          Economic Policy Lab
+        <Link
+          to="/"
+          className="brand"
+          aria-label="Economic Policy Lab home"
+        >
+          <img
+            className="brand-logo"
+            src="/epl-logo.jpg"
+            alt="Economic Policy Lab logo"
+          />
+
+          <span className="brand-name">
+            <span className="brand-letter-e">E</span>
+            <span className="brand-letter-p">P</span>
+            <span className="brand-letter-l">L</span>
+            <span className="brand-rest">
+              {" "}Economic Policy Lab
+            </span>
+          </span>
         </Link>
 
         <Link to="/login" className="login-link">
