@@ -37,7 +37,12 @@ export default function Admin() {
   }
   async function logout() { await supabase.auth.signOut(); navigate("/login", { replace: true }); }
   if (!ready) return <main className="admin-page"><p>{message}</p></main>;
-  return <main className="admin-page"><header className="admin-heading"><div><p className="eyebrow">Economic Policy Lab · Administration</p><h1>Editorial dashboard</h1><p>Signed in as {identity}</p></div><div className="admin-actions"><Link className="text-button" to="/">View website</Link><Link className="epl-button" to="/editor">＋ Create publication</Link><button className="epl-button" onClick={logout}>Log out</button></div></header>
+  return <main 
+           className="admin-page"><header 
+          className="admin-heading"><div><p 
+         className="eyebrow">Economic Policy Lab · Administration</p><h1>Editorial dashboard</h1><p>Signed in as {identity}</p></div>
+        <div className="admin-actions"><Link className="text-button" to="/">View website</Link><Link 
+      className="epl-button" to="/editor">＋ Create publication</Link><button className="epl-button" onClick={logout}>Log out</button></div></header>
     <section className="admin-stats"><div><span>Total items</span><strong>{items.length}</strong></div><div><span>Pending review</span><strong>{items.filter(x=>x.status==="pending").length}</strong></div><div><span>Published</span><strong>{items.filter(x=>x.status==="published").length}</strong></div></section>
     {message && <p className="form-message" role="status">{message}</p>}
     <section className="admin-queue"><div className="admin-queue-title"><h2>Content queue</h2><button className="text-button" onClick={()=>void load()}>Refresh</button></div>
