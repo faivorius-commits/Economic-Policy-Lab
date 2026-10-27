@@ -11,27 +11,6 @@ type ArticleStatus =
   | "rejected"
   | "archived";
 
-// Membersihkan HTML agar tag tidak tampil sebagai teks mentah.
-function cleanArticleBody(html: string): string {
-  if (!html) return "";
-
-  const paragraphs = html
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/(div|p|h[1-6]|li)>/gi, "\n\n")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&nbsp;|&#160;|&#xA0;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;|&apos;/gi, "'")
-    .replace(/\r\n/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-
-  return paragraphs;
-}
-
 export default function MemberWrite() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -92,8 +71,6 @@ export default function MemberWrite() {
           .select("*")
           .eq("id", id);
 
-        // Members may edit only their own submissions.
-        // Admins may edit any article, subject to Supabase RLS.
         if (!admin) {
           query = query.eq("author_id", session.user.id);
         }
@@ -123,7 +100,6 @@ export default function MemberWrite() {
         setCategory(data.category || "");
         setType(data.content_type || "article");
         setCover(data.cover_image_url || "");
-
         setBody(data.content || "");
 
         setOriginalStatus(
@@ -148,7 +124,9 @@ export default function MemberWrite() {
 
   async function save(mode: "draft" | "pending") {
     if (!author.trim() || !title.trim() || !body.trim()) {
-      setMessage("Please enter an author name, title, and body.");
+      setMessage(
+        "Please enter an author name, title, and body."
+      );
       return;
     }
 
@@ -156,7 +134,6 @@ export default function MemberWrite() {
     setMessage("");
 
     const payload = {
-      // Preserve the original author when an admin edits an article.
       author_id: id && isAdmin ? ownerId : userId,
       author_name: author.trim(),
       title: title.trim(),
@@ -323,16 +300,14 @@ export default function MemberWrite() {
             />
           </label>
 
-          <label>
-            Body
-            
-<RichTextEditor
-  value={body}
-  onChange={setBody}
-  placeholder="Tulis artikel atau penelitian di sini..."
-/>
-            
-          </label>
+          <div className="member-body-field">
+            <label>Body</label>
+            <RichTextEditor
+              value={body}
+              onChange={setBody}
+              placeholder="Tulis artikel atau penelitian di sini..."
+            />
+          </div>
         </section>
 
         <div className="member-form-actions">
