@@ -78,7 +78,10 @@ export default function Member() {
         return;
       }
 
-      const isAdmin = profile.role === "admin";
+      const isAdmin =
+     profile?.role === "admin" ||
+     session?.user?.email?.trim().toLowerCase() ===
+     "members@economicpolicylab.org";
 
       setRole(isAdmin ? "admin" : "member");
       setIdentity(
