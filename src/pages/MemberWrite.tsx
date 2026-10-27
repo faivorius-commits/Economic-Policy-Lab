@@ -124,8 +124,7 @@ export default function MemberWrite() {
         setType(data.content_type || "article");
         setCover(data.cover_image_url || "");
 
-        // Clean HTML before displaying it in the editor.
-        setBody(cleanArticleBody(data.content || ""));
+        setBody(data.content || "");
 
         setOriginalStatus(
           (data.status || "draft") as ArticleStatus
