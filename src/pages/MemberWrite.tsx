@@ -303,9 +303,10 @@ export default function MemberWrite() {
           <div className="member-body-field">
             <label>Body</label>
             <RichTextEditor
-              value={body}
-              onChange={setBody}
-              placeholder="Tulis artikel atau penelitian di sini..."
+            value={body}
+            onChange={setBody}
+            label="Article content"
+/>
             />
           </div>
         </section>
