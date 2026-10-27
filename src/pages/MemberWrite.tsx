@@ -60,8 +60,10 @@ export default function MemberWrite() {
         return;
       }
 
-      const admin = profile?.role === "admin";
-
+      const admin =
+      profile?.role === "admin" ||
+      session?.user?.email?.trim().toLowerCase() ===
+     "members@economicpolicylab.org";
       setUserId(session.user.id);
       setIsAdmin(admin);
 
