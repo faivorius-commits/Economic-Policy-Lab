@@ -325,13 +325,13 @@ export default function MemberWrite() {
 
           <label>
             Body
-            <textarea
-              required
-              rows={18}
-              value={body}
-              onChange={(event) => setBody(event.target.value)}
-              placeholder="Write your article or research here..."
-            />
+            
+<RichTextEditor
+  value={body}
+  onChange={setBody}
+  placeholder="Tulis artikel atau penelitian di sini..."
+/>
+            
           </label>
         </section>
 
