@@ -1451,13 +1451,13 @@ textarea:focus-visible, select:focus-visible {
 @media (max-width: 800px) { .team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .team-page { padding: 38px 20px 58px; } }
 @media (max-width: 520px) { .team-grid { grid-template-columns: 1fr; } .team-hero { padding-top: 24px; } .team-card-body { padding: 16px; } }
 
-/* Economic Policy Lab logo and wordmark */
+/* Economic Policy Lab Logo and Wordmark */
 .brand {
   display: inline-flex;
   align-items: center;
   gap: 14px;
   min-width: 0;
-  color: #1b1c1c;
+  color: #000000;
   text-decoration: none;
 }
 
@@ -1475,6 +1475,9 @@ textarea:focus-visible, select:focus-visible {
 .brand-name {
   display: inline;
   white-space: nowrap;
+  color: #000000;
+  font-weight: 700;
+  letter-spacing: 0.3px;
 }
 
 .brand-letter-e {
@@ -1483,11 +1486,11 @@ textarea:focus-visible, select:focus-visible {
 
 .brand-letter-p,
 .brand-letter-l {
-  color: #2563eb;
+  color: #3b82f6;
 }
 
 .brand-rest {
-  color: #1b1c1c;
+  color: #000000;
 }
 
 @media (max-width: 760px) {
@@ -1505,19 +1508,4 @@ textarea:focus-visible, select:focus-visible {
     white-space: normal;
     line-height: 1.15;
   }
-}
-
-.brand-name {
-  color: #000000;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-}
-
-.brand-e {
-  color: #FACC15;
-}
-
-.brand-p,
-.brand-l {
-  color: #3B82F6;
 }
