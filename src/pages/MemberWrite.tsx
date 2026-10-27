@@ -300,15 +300,16 @@ export default function MemberWrite() {
             />
           </label>
 
+          
           <div className="member-body-field">
             <label>Body</label>
             <RichTextEditor
-            value={body}
-            onChange={setBody}
-            label="Article content"
-/>
+              value={body}
+              onChange={setBody}
+              label="Article content"
             />
           </div>
+
         </section>
 
         <div className="member-form-actions">
