@@ -1,3 +1,4 @@
+
 import { Link, Route, Routes } from "react-router-dom";
 import Header from "./components/Header";
 import Home from "./pages/Home";
@@ -14,33 +15,83 @@ import EditorialEditor from "./pages/EditorialEditor";
 import TeamEditor from "./pages/TeamEditor";
 import Team from "./pages/Team";
 import AdminArticleEdit from "./pages/AdminArticleEdit";
-import MemberWrite from "./pages/MemberWrite";
 
-type PlaceholderPageProps = { title: string; description: string };
-function PlaceholderPage({ title, description }: PlaceholderPageProps) {
-  return <main className="page-shell simple-page"><p className="eyebrow">Economic Policy Lab</p><h1>{title}</h1><p>{description}</p><Link to="/" className="button button-outline">Back to Home</Link></main>;
+type PlaceholderPageProps = {
+  title: string;
+  description: string;
+};
+
+function PlaceholderPage({
+  title,
+  description,
+}: PlaceholderPageProps) {
+  return (
+    <main className="page-shell simple-page">
+      <p className="eyebrow">Economic Policy Lab</p>
+      <h1>{title}</h1>
+      <p>{description}</p>
+      <Link to="/" className="button button-outline">
+        Back to Home
+      </Link>
+    </main>
+  );
 }
+
 function NotFoundPage() {
-  return <PlaceholderPage title="Page not found" description="The page you requested could not be found." />;
+  return (
+    <PlaceholderPage
+      title="Page not found"
+      description="The page you requested could not be found."
+    />
+  );
 }
+
 export default function App() {
-  return <div className="app"><Header /><Routes>
-    <Route path="/" element={<Home />} />
-    <Route path="/articles" element={<Articles />} />
-    <Route path="/articles/:id" element={<Content />} />
-    <Route path="/research" element={<Research />} />
-    <Route path="/content" element={<Content />} />
-    <Route path="/join" element={<Join />} />
-    <Route path="/login" element={<Login />} />
-    <Route path="/auth" element={<Auth />} />
-    <Route path="/admin" element={<Admin />} />
-    <Route path="/editor" element={<EditorialEditor />} />
-    <Route path="/editor/team" element={<TeamEditor />} />
-    <Route path="/editor/:id" element={<EditorialEditor />} />
-    <Route path="/member" element={<Member />} />
-    <Route path="/member/write" element={<MemberWrite />}/>
-    <Route path="/team" element={<Team />} />
-    <Route path="*" element={<NotFoundPage />} />
-    <Route path="/admin/article" element={<AdminArticleEdit />} />
-  </Routes><footer className="site-footer">© 2025 Komunitas Ekonom Muda Indonesia / Economic Policy Lab. All rights reserved.</footer></div>;
+  return (
+    <div className="app">
+      <Header />
+
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/articles" element={<Articles />} />
+        <Route path="/articles/:id" element={<Content />} />
+        <Route path="/research" element={<Research />} />
+        <Route path="/content" element={<Content />} />
+        <Route path="/join" element={<Join />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/auth" element={<Auth />} />
+
+        <Route path="/admin" element={<Admin />} />
+        <Route
+          path="/admin/article"
+          element={<AdminArticleEdit />}
+        />
+
+        <Route path="/editor" element={<EditorialEditor />} />
+        <Route
+          path="/editor/team"
+          element={<TeamEditor />}
+        />
+        <Route
+          path="/editor/:id"
+          element={<EditorialEditor />}
+        />
+
+        <Route path="/member" element={<Member />} />
+        <Route
+          path="/member/write"
+          element={<MemberWrite />}
+        />
+
+        <Route path="/team" element={<Team />} />
+
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+
+      <footer className="site-footer">
+        © 2025 Komunitas Ekonom Muda Indonesia / Economic Policy Lab.
+        All rights reserved.
+      </footer>
+    </div>
+  );
 }
