@@ -1,3 +1,4 @@
+
 import React from "react";
 
 type RichTextEditorProps = {
@@ -89,13 +90,13 @@ export default function RichTextEditor({
         </button>
 
         <button
-        type="button"
-        style={buttonStyle}
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={() => runCommand("justifyFull")}
+          type="button"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => applyFormat("justifyFull")}
         >
-        Justify
+          Justify
         </button>
+
         <button
           type="button"
           onClick={() => applyFormat("insertHorizontalRule")}
@@ -103,7 +104,6 @@ export default function RichTextEditor({
           Divider
         </button>
       </div>
-      
 
       <div
         ref={editorRef}
@@ -117,6 +117,10 @@ export default function RichTextEditor({
         role="textbox"
         aria-label="Article body"
         aria-multiline="true"
+        style={{
+          fontSize: "15px",
+          lineHeight: 1.7,
+        }}
       />
     </div>
   );
