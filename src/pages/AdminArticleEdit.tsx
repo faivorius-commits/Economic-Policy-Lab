@@ -2,6 +2,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import RichTextEditor from "../components/RichTextEditor";
 
 type ArticleForm = {
   title: string;
