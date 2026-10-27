@@ -1507,4 +1507,17 @@ textarea:focus-visible, select:focus-visible {
   }
 }
 
+.brand-name {
+  color: #000000;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
 
+.brand-e {
+  color: #FACC15;
+}
+
+.brand-p,
+.brand-l {
+  color: #3B82F6;
+}
