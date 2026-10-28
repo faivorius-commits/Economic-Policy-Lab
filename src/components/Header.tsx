@@ -1,6 +1,13 @@
 
 import { Link, NavLink } from "react-router-dom";
 
+const wordmarkStyle = {
+  fontFamily: "Arial, sans-serif",
+  fontWeight: 900,
+  fontStyle: "italic" as const,
+  letterSpacing: "-0.035em",
+};
+
 export default function Header() {
   const navigation = [
     { to: "/", label: "Home" },
@@ -16,21 +23,21 @@ export default function Header() {
         <Link
           to="/"
           className="brand"
-          aria-label="Economic Policy Lab home"
+          aria-label="Economic Policy Labs home"
         >
           <img
             className="brand-logo"
             src="/epl-logo.jpg"
-            alt="Economic Policy Lab logo"
+            alt="Economic Policy Labs logo"
           />
 
-          <span className="brand-name">
-            <span className="brand-letter-e">E</span>
-            <span className="brand-rest">conomic </span>
-            <span className="brand-letter-p">P</span>
-            <span className="brand-rest">olicy </span>
-            <span className="brand-letter-l">L</span>
-            <span className="brand-rest">ab</span>
+          <span className="brand-name" style={wordmarkStyle}>
+            <span className="brand-letter-e" style={wordmarkStyle}>E</span>
+            <span className="brand-rest" style={wordmarkStyle}>conomic </span>
+            <span className="brand-letter-p" style={wordmarkStyle}>P</span>
+            <span className="brand-rest" style={wordmarkStyle}>olicy </span>
+            <span className="brand-letter-l" style={wordmarkStyle}>L</span>
+            <span className="brand-rest" style={wordmarkStyle}>abs</span>
           </span>
         </Link>
 
