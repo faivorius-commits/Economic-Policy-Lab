@@ -1,11 +1,15 @@
 
 import { Link, NavLink } from "react-router-dom";
 
+
 const wordmarkStyle = {
-  fontFamily: "Arial, sans-serif",
+  display: "inline-block",
+  fontFamily: "Arial, Helvetica, sans-serif",
   fontWeight: 900,
   fontStyle: "italic" as const,
   letterSpacing: "-0.035em",
+  transform: "skewX(-12deg)",
+  transformOrigin: "left center",
 };
 
 export default function Header() {
