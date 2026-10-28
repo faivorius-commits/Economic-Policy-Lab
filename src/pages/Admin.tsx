@@ -652,7 +652,87 @@ export default function Admin() {
         </div>
       </section>
 
+      {/* Pending Review — visible immediately after admin login */}
+      <section className="admin-queue pending-review-panel">
+        <div className="admin-queue-title">
+          <div>
+            <h2>Pending Review</h2>
+            <p>
+              Review and publish submitted articles directly
+              from your dashboard.
+            </p>
+          </div>
+
+          <span className="status-pill">
+            {pendingCount} pending
+          </span>
+        </div>
+
+        {pendingCount > 0 ? (
+          <div className="pending-review-list">
+            {items
+              .filter((item) => item.status === "pending")
+              .map((item) => (
+                <article
+                  className="pending-review-item"
+                  key={item.id}
+                >
+                  <div className="pending-review-info">
+                    <strong>
+                      {item.title || "Untitled"}
+                    </strong>
+
+                    <span>
+                      {item.content_type || "Article"} ·{" "}
+                      {item.author_name || "EPL Member"}
+                    </span>
+                  </div>
+
+                  <div className="admin-actions pending-review-actions">
+                    <Link
+                      className="text-button"
+                      to={`/member/write?id=${encodeURIComponent(
+                        item.id
+                      )}`}
+                    >
+                      Edit
+                    </Link>
+
+                    <button
+                      type="button"
+                      className="approve-button"
+                      disabled={busy}
+                      onClick={() =>
+                        void approveArticle(item)
+                      }
+                    >
+                      ✓ Approve
+                    </button>
+
+                    <button
+                      type="button"
+                      className="reject-button"
+                      disabled={busy}
+                      onClick={() =>
+                        void changeStatus(item, "rejected")
+                      }
+                    >
+                      ✕ Reject
+                    </button>
+                  </div>
+                </article>
+              ))}
+          </div>
+        ) : (
+          <p className="admin-footnote">
+            There are no submissions waiting for review.
+          </p>
+        )}
+      </section>
+
       <nav className="editor-tabs" aria-label="Editor sections">
+        
+
         <button
           type="button"
           className={tab === "articles" ? "editor-tab active" : "editor-tab"}
