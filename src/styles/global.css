@@ -2114,3 +2114,30 @@ textarea:focus-visible, select:focus-visible {
   }
 }
 
+/* EPL navbar brand typography — bold italic */
+.site-header .brand-name {
+  font-family: "Inter", Arial, sans-serif;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -0.035em;
+}
+
+.site-header .brand-name .brand-letter-e,
+.site-header .brand-name .brand-letter-p,
+.site-header .brand-name .brand-letter-l,
+.site-header .brand-name .brand-rest {
+  font-family: inherit;
+  font-weight: 800;
+  font-style: italic;
+}
+
+/* Keep the existing brand colors and logo layout */
+.site-header .brand {
+  min-width: 0;
+}
+
+.site-header .brand-name {
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
