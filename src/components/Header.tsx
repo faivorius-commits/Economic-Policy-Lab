@@ -2,15 +2,17 @@
 import { Link, NavLink } from "react-router-dom";
 
 
+
 const wordmarkStyle = {
   display: "inline-block",
   fontFamily: "Arial, Helvetica, sans-serif",
   fontWeight: 900,
   fontStyle: "italic" as const,
-  letterSpacing: "-0.035em",
+  letterSpacing: "-0.02em",
   transform: "skewX(-12deg)",
   transformOrigin: "left center",
 };
+
 
 export default function Header() {
   const navigation = [
@@ -35,14 +37,19 @@ export default function Header() {
             alt="Economic Policy Labs logo"
           />
 
-          <span className="brand-name" style={wordmarkStyle}>
-            <span className="brand-letter-e" style={wordmarkStyle}>E</span>
-            <span className="brand-rest" style={wordmarkStyle}>conomic </span>
-            <span className="brand-letter-p" style={wordmarkStyle}>P</span>
-            <span className="brand-rest" style={wordmarkStyle}>olicy </span>
-            <span className="brand-letter-l" style={wordmarkStyle}>L</span>
-            <span className="brand-rest" style={wordmarkStyle}>abs</span>
-          </span>
+          
+<span className="brand-name" style={wordmarkStyle}>
+  <span className="brand-letter-e" style={wordmarkStyle}>E</span>
+  <span className="brand-rest" style={wordmarkStyle}>conomic </span>
+  {" "}
+  <span className="brand-letter-p" style={wordmarkStyle}>P</span>
+  <span className="brand-rest" style={wordmarkStyle}>olicy</span>
+  {" "}
+  <span className="brand-letter-l" style={wordmarkStyle}>L</span>
+  <span className="brand-rest" style={wordmarkStyle}>abs</span>
+</span>
+          
+          
         </Link>
 
         <Link to="/login" className="login-link">
