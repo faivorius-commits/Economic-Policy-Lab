@@ -2141,3 +2141,13 @@ textarea:focus-visible, select:focus-visible {
   white-space: nowrap;
 }
 
+
+/* FORCE italic on the EPL navbar wordmark */
+header.site-header a.brand .brand-name,
+header.site-header a.brand .brand-name span {
+  font-family: "Inter", Arial, sans-serif !important;
+  font-style: italic !important;
+  font-weight: 900 !important;
+  -webkit-text-stroke: 0.3px currentColor;
+  letter-spacing: -0.035em !important;
+}
