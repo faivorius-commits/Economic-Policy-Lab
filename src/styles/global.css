@@ -2030,3 +2030,87 @@ textarea:focus-visible, select:focus-visible {
 }
 
 
+/* =========================================
+   EPL Typography — Bold Italic Headings
+   Reference: EPL / Colpal wordmark
+   ========================================= */
+
+/* Load Inter ExtraBold Italic and Black Italic */
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,800;0,900;1,800;1,900&display=swap");
+
+/* Main page headings */
+.hero-section h1,
+.simple-page h1,
+.articles-intro h1,
+.content-detail h1,
+.home-hero-copy h1,
+.research-intro h1,
+.auth-card h1,
+.join-hero h1,
+.admin-heading h1,
+.member-heading h1,
+.team-hero h1 {
+  font-family: "Inter", Arial, sans-serif;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -0.035em;
+}
+
+/* Section headings and featured titles */
+.hero-note h2,
+.section-heading h2,
+.insight-card h2,
+.home-paper-copy h2,
+.home-section-heading h2,
+.research-card h2,
+.join-benefits h2,
+.join-form-panel h2,
+.admin-queue-title h2,
+.member-list-heading h2,
+.team-section-heading h2 {
+  font-family: "Inter", Arial, sans-serif;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -0.025em;
+}
+
+/* Article and content titles */
+.article-card h3,
+.home-commentary-card h3,
+.join-benefits h3,
+.member-empty h3,
+.member-submission h3,
+.team-card h3 {
+  font-family: "Inter", Arial, sans-serif;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -0.02em;
+}
+
+/* Headings inside published article content */
+.article-body h2,
+.article-body h3 {
+  font-family: "Inter", Arial, sans-serif;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -0.02em;
+}
+
+/* Keep heading text readable on small screens */
+@media (max-width: 600px) {
+  .hero-section h1,
+  .simple-page h1,
+  .articles-intro h1,
+  .content-detail h1,
+  .home-hero-copy h1,
+  .research-intro h1,
+  .auth-card h1,
+  .join-hero h1,
+  .admin-heading h1,
+  .member-heading h1,
+  .team-hero h1 {
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+}
+
