@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
@@ -12,6 +13,8 @@ type Submission = {
   author_name: string | null;
 };
 
+const ADMIN_EMAIL = "members@economicpolicylab.org";
+
 export default function Member() {
   const navigate = useNavigate();
 
@@ -20,6 +23,7 @@ export default function Member() {
   const [items, setItems] = useState<Submission[]>([]);
   const [message, setMessage] = useState("Loading workspace...");
   const [ready, setReady] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(
     async (userId: string, isAdmin: boolean) => {
@@ -30,8 +34,6 @@ export default function Member() {
         )
         .order("updated_at", { ascending: false });
 
-      // Admin dapat melihat semua artikel dan research.
-      // Member biasa hanya dapat melihat kontennya sendiri.
       if (!isAdmin) {
         query = query.eq("author_id", userId);
       }
@@ -79,9 +81,8 @@ export default function Member() {
       }
 
       const isAdmin =
-     profile?.role === "admin" ||
-     session?.user?.email?.trim().toLowerCase() ===
-     "members@economicpolicylab.org";
+        profile.role === "admin" ||
+        session.user.email?.trim().toLowerCase() === ADMIN_EMAIL;
 
       setRole(isAdmin ? "admin" : "member");
       setIdentity(
@@ -99,6 +100,78 @@ export default function Member() {
     };
   }, [navigate, load]);
 
+  const count = (status: string) =>
+    items.filter((item) => item.status === status).length;
+
+  async function reviewSubmission(
+    item: Submission,
+    status: "published" | "rejected"
+  ) {
+    if (role !== "admin" || busyId) return;
+
+    const action =
+      status === "published" ? "approve and publish" : "reject";
+
+    if (
+      !window.confirm(
+        `Are you sure you want to ${action} "${item.title || "Untitled submission"}"?`
+      )
+    ) {
+      return;
+    }
+
+    setBusyId(item.id);
+    setMessage(
+      status === "published"
+        ? "Publishing submission..."
+        : "Rejecting submission..."
+    );
+
+    try {
+      const now = new Date().toISOString();
+
+      const { data, error } = await supabase
+        .from("articles")
+        .update({
+          status,
+          updated_at: now,
+          ...(status === "published" ? { published_at: now } : {}),
+        })
+        .eq("id", item.id)
+        .select("id");
+
+      if (error) {
+        setMessage("Could not update submission: " + error.message);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        setMessage(
+          "Submission was not updated. Check your Supabase permissions."
+        );
+        return;
+      }
+
+      setMessage(
+        status === "published"
+          ? "Submission approved and published successfully."
+          : "Submission rejected successfully."
+      );
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        await load(session.user.id, true);
+      }
+    } catch {
+      setMessage("An unexpected error occurred while reviewing.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function logout() {
     await supabase.auth.signOut();
     navigate("/login", { replace: true });
@@ -112,8 +185,9 @@ export default function Member() {
     );
   }
 
-  const count = (status: string) =>
-    items.filter((item) => item.status === status).length;
+  const pendingItems = items.filter(
+    (item) => item.status === "pending"
+  );
 
   return (
     <main className="member-page">
@@ -127,12 +201,14 @@ export default function Member() {
 
           <p>
             {role === "admin"
-              ? "You have access to both the member workspace and administration tools."
+              ? "Manage submissions and review content directly from your workspace."
               : "Create, manage, and track your submissions."}
           </p>
 
           <span className="status-pill">
-            {role === "admin" ? "Admin + Member access" : "Member"}
+            {role === "admin"
+              ? "Admin + Member access"
+              : "Member"}
           </span>
         </div>
 
@@ -159,7 +235,9 @@ export default function Member() {
 
       <section className="member-stats">
         <div>
-          <span>{role === "admin" ? "All content" : "Your submissions"}</span>
+          <span>
+            {role === "admin" ? "All content" : "Your submissions"}
+          </span>
           <strong>{items.length}</strong>
         </div>
 
@@ -179,14 +257,121 @@ export default function Member() {
         </div>
       </section>
 
+      {/* Admin-only review panel */}
+      {role === "admin" && (
+        <section className="admin-queue pending-review-panel">
+          <div className="admin-queue-title">
+            <div>
+              <p className="eyebrow">Editorial review</p>
+              <h2>Pending Review</h2>
+              <p>
+                Approve or reject submitted articles and research.
+              </p>
+            </div>
+
+            <span className="status-pill">
+              {pendingItems.length} pending
+            </span>
+          </div>
+
+          {pendingItems.length > 0 ? (
+            <div className="pending-review-list">
+              {pendingItems.map((item) => (
+                <article
+                  className="pending-review-item"
+                  key={item.id}
+                >
+                  <div className="pending-review-info">
+                    <span className="status-pill">pending</span>
+
+                    <p className="member-type">
+                      {item.content_type === "research"
+                        ? "Research"
+                        : "Article"}
+                    </p>
+
+                    <h3>{item.title || "Untitled submission"}</h3>
+
+                    <p className="member-excerpt">
+                      Contributor: {item.author_name || "EPL Member"}
+                    </p>
+
+                    {item.excerpt && (
+                      <p className="member-excerpt">
+                        {item.excerpt}
+                      </p>
+                    )}
+
+                    <small>
+                      Last updated:{" "}
+                      {item.updated_at
+                        ? new Date(item.updated_at).toLocaleDateString()
+                        : "—"}
+                    </small>
+                  </div>
+
+                  <div className="member-actions pending-review-actions">
+                    <Link
+                      className="text-button"
+                      to={
+                        "/member/write?id=" +
+                        encodeURIComponent(item.id)
+                      }
+                    >
+                      Edit
+                    </Link>
+
+                    <button
+                      type="button"
+                      className="approve-button"
+                      disabled={busyId !== null}
+                      onClick={() =>
+                        void reviewSubmission(item, "published")
+                      }
+                    >
+                      {busyId === item.id
+                        ? "Working..."
+                        : "✓ Approve"}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="reject-button"
+                      disabled={busyId !== null}
+                      onClick={() =>
+                        void reviewSubmission(item, "rejected")
+                      }
+                    >
+                      ✕ Reject
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="member-empty">
+              <h3>All caught up!</h3>
+              <p>
+                There are no submissions waiting for review.
+              </p>
+            </div>
+          )}
+        </section>
+      )}
+
       <section className="member-list">
         <div className="member-list-heading">
           <div>
             <p className="eyebrow">
-              {role === "admin" ? "Content management" : "Your work"}
+              {role === "admin"
+                ? "Content management"
+                : "Your work"}
             </p>
+
             <h2>
-              {role === "admin" ? "All Articles & Research" : "Submissions"}
+              {role === "admin"
+                ? "All Articles & Research"
+                : "Submissions"}
             </h2>
           </div>
 
@@ -216,7 +401,10 @@ export default function Member() {
 
         <div className="member-submissions">
           {items.map((item) => (
-            <article className="member-submission" key={item.id}>
+            <article
+              className="member-submission"
+              key={item.id}
+            >
               <div>
                 <span className="status-pill">
                   {item.status || "draft"}
@@ -237,7 +425,9 @@ export default function Member() {
                 )}
 
                 {item.excerpt && (
-                  <p className="member-excerpt">{item.excerpt}</p>
+                  <p className="member-excerpt">
+                    {item.excerpt}
+                  </p>
                 )}
 
                 <small>
