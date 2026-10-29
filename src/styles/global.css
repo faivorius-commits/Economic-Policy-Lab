@@ -2151,3 +2151,192 @@ header.site-header a.brand .brand-name span {
   -webkit-text-stroke: 0.3px currentColor;
   letter-spacing: -0.035em !important;
 }
+
+/* EPL ADMIN — GOLD & BLUE BRAND PALETTE */
+
+.admin-page {
+  --admin-gold: #e5ad52;
+  --admin-yellow: #f4dc7d;
+  --admin-blue: #89a9e8;
+  --admin-navy: #355b98;
+  --admin-cream: #fffaf0;
+  --admin-brown: #693516;
+
+  color: #263d61;
+  background: #fffdf8;
+  border-radius: 16px;
+}
+
+.admin-page .admin-queue {
+  background: #fff;
+  border: 1px solid #ead9b6;
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(53, 91, 152, .06);
+}
+
+.admin-page .admin-heading {
+  border-bottom: 3px solid var(--admin-gold);
+}
+
+.admin-page .admin-heading h1,
+.admin-page .admin-queue-title h2 {
+  color: var(--admin-navy);
+}
+
+.admin-page .admin-stats > div {
+  background: linear-gradient(135deg, #fff5d9, #fff);
+  border: 1px solid #ead9b6;
+  border-top: 4px solid var(--admin-gold);
+  border-radius: 12px;
+}
+
+.admin-page .admin-stats > div:nth-child(even) {
+  background: linear-gradient(135deg, #edf3ff, #fff);
+  border-color: #d6e2fa;
+  border-top-color: var(--admin-blue);
+}
+
+.admin-page .admin-stats strong {
+  color: var(--admin-navy);
+}
+
+/* Table header */
+.admin-page .admin-table th {
+  color: #263d61;
+  background: linear-gradient(90deg, #f7df91, #e9effc);
+  border-bottom: 2px solid #d7b66e;
+}
+
+.admin-page .admin-table td {
+  color: #344256;
+  background: #fff;
+  border-bottom: 1px solid #e8edf5;
+}
+
+.admin-page .admin-table tbody tr:hover td {
+  background: #fffaf0;
+}
+
+/* Navigation tabs */
+.admin-page .editor-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 24px 0;
+  padding: 8px;
+  background: #f2f6ff;
+  border: 1px solid #d6e2fa;
+  border-radius: 12px;
+}
+
+.admin-page .editor-tab {
+  padding: 11px 16px;
+  color: var(--admin-navy);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-page .editor-tab:hover {
+  background: #fff1c9;
+  border-color: var(--admin-gold);
+}
+
+.admin-page .editor-tab.active {
+  color: #fff;
+  background: var(--admin-navy);
+  border-color: var(--admin-navy);
+}
+
+/* Main buttons */
+.admin-page .epl-button {
+  color: #fff;
+  background: var(--admin-navy);
+  border: 1px solid var(--admin-navy);
+  border-radius: 9px;
+}
+
+.admin-page .epl-button:hover {
+  color: #263d61;
+  background: var(--admin-yellow);
+  border-color: var(--admin-gold);
+}
+
+.admin-page .text-button {
+  color: var(--admin-navy);
+  background: #edf3ff;
+  border: 1px solid #d0def6;
+  border-radius: 8px;
+  text-decoration: none;
+}
+
+.admin-page .text-button:hover {
+  color: var(--admin-brown);
+  background: #fff1c9;
+  border-color: var(--admin-gold);
+}
+
+/* Approve and reject */
+.admin-page .approve-button {
+  color: #50320b !important;
+  background: #f5d878 !important;
+  border: 1px solid #e4b64f !important;
+  border-radius: 8px;
+}
+
+.admin-page .reject-button {
+  color: #fff !important;
+  background: #6687c5 !important;
+  border: 1px solid #5274b4 !important;
+  border-radius: 8px;
+}
+
+/* Forms */
+.admin-page input:not([type="checkbox"]),
+.admin-page select,
+.admin-page textarea {
+  color: #263d61;
+  background: #fffefa;
+  border: 1px solid #d9dfeb;
+  border-radius: 8px;
+}
+
+.admin-page input:focus,
+.admin-page select:focus,
+.admin-page textarea:focus {
+  outline: 2px solid #9bb7eb;
+  outline-offset: 1px;
+}
+
+/* Team editor */
+.admin-page .team-editor-form {
+  padding: 22px;
+  background: #fffaf0;
+  border: 1px solid #ead9b6;
+  border-radius: 12px;
+}
+
+.admin-page .status-pill {
+  color: #355b98;
+  background: #edf3ff;
+  border: 1px solid #c8d8f6;
+  border-radius: 999px;
+}
+
+@media (max-width: 600px) {
+  .admin-page .editor-tabs {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .admin-page .editor-tab {
+    flex: 1 1 auto;
+    padding: 10px;
+  }
+
+  .admin-page .team-editor-form {
+    padding: 15px;
+  }
+}
