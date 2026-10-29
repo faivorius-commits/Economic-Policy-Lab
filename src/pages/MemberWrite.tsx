@@ -304,6 +304,7 @@ setBody(data.content || "");
             />
           </label>
 
+          
           <label>
             Category
             <input
@@ -312,7 +313,25 @@ setBody(data.content || "");
             />
           </label>
 
-          
+          {/* Publication date and time — admin only */}
+          {isAdmin && (
+            <label className="member-form-wide">
+              Publication date &amp; time
+              <input
+                type="datetime-local"
+                name="published_at"
+                value={publishedAt}
+                onChange={(event) =>
+                  setPublishedAt(event.target.value)
+                }
+              />
+              <small>
+                Choose the publication date and time.
+                Leave blank to clear the publication date.
+              </small>
+            </label>
+          )}
+
           <div className="member-body-field">
             <label>Body</label>
             <RichTextEditor
@@ -321,6 +340,7 @@ setBody(data.content || "");
               label="Article content"
             />
           </div>
+
 
         </section>
 
