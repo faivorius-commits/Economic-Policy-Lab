@@ -25,6 +25,7 @@ export default function MemberWrite() {
   const [body, setBody] = useState("");
   const [type, setType] = useState("article");
   const [cover, setCover] = useState("");
+  const [publishedAt, setPublishedAt] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [originalStatus, setOriginalStatus] =
     useState<ArticleStatus>("draft");
@@ -102,7 +103,16 @@ export default function MemberWrite() {
         setCategory(data.category || "");
         setType(data.content_type || "article");
         setCover(data.cover_image_url || "");
-        setBody(data.content || "");
+
+setPublishedAt(
+  data.published_at
+    ? new Date(data.published_at)
+        .toISOString()
+        .slice(0, 16)
+    : ""
+);
+
+setBody(data.content || "");
 
         setOriginalStatus(
           (data.status || "draft") as ArticleStatus
