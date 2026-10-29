@@ -1,4 +1,3 @@
-
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
@@ -12,6 +11,7 @@ type ArticleForm = {
   content_type: string;
   cover_image_url: string;
   content: string;
+  published_at: string;
 };
 
 const emptyForm: ArticleForm = {
@@ -22,6 +22,7 @@ const emptyForm: ArticleForm = {
   content_type: "article",
   cover_image_url: "",
   content: "",
+  published_at: "",
 };
 
 export default function AdminArticleEdit() {
@@ -72,7 +73,7 @@ export default function AdminArticleEdit() {
       const { data, error } = await supabase
         .from("articles")
         .select(
-          "id,title,author_name,excerpt,category,content_type,cover_image_url,content"
+          "id,title,author_name,excerpt,category,content_type,cover_image_url,content,published_at"
         )
         .eq("id", id)
         .single();
@@ -95,6 +96,11 @@ export default function AdminArticleEdit() {
         content_type: data.content_type || "article",
         cover_image_url: data.cover_image_url || "",
         content: data.content || "",
+        published_at: data.published_at
+          ? new Date(data.published_at)
+              .toISOString()
+              .slice(0, 16)
+          : "",
       });
 
       setMessage("");
@@ -107,8 +113,7 @@ export default function AdminArticleEdit() {
       active = false;
     };
   }, [id, navigate]);
-
-  function change<K extends keyof ArticleForm>(
+    function change<K extends keyof ArticleForm>(
     key: K,
     value: ArticleForm[K]
   ) {
@@ -146,6 +151,9 @@ export default function AdminArticleEdit() {
         cover_image_url:
           form.cover_image_url.trim() || null,
         content: form.content.trim(),
+        published_at: form.published_at
+          ? new Date(form.published_at).toISOString()
+          : null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", id);
@@ -160,6 +168,7 @@ export default function AdminArticleEdit() {
     }
 
     setMessage("Article changes saved successfully.");
+
     window.scrollTo({
       top: 0,
       behavior: "smooth",
@@ -189,8 +198,9 @@ export default function AdminArticleEdit() {
           <h1>Edit article</h1>
 
           <p>
-            Edit article details, format the text, and insert
-            supporting images into the article body.
+            Edit article details, publication date, format
+            the text, and insert supporting images into
+            the article body.
           </p>
         </div>
 
@@ -258,6 +268,21 @@ export default function AdminArticleEdit() {
         </label>
 
         <label className="team-form-wide">
+          Publication date and time
+          <input
+            type="datetime-local"
+            value={form.published_at}
+            onChange={(e) =>
+              change("published_at", e.target.value)
+            }
+          />
+          <small>
+            Choose the date and time displayed on the
+            public article page. Leave blank to hide
+            the date.
+          </small>
+        </label>
+                <label className="team-form-wide">
           Summary / excerpt
           <textarea
             rows={3}
