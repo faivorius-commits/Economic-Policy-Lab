@@ -1,3 +1,4 @@
+
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
@@ -113,7 +114,8 @@ export default function AdminArticleEdit() {
       active = false;
     };
   }, [id, navigate]);
-    function change<K extends keyof ArticleForm>(
+
+  function change<K extends keyof ArticleForm>(
     key: K,
     value: ArticleForm[K]
   ) {
@@ -267,70 +269,66 @@ export default function AdminArticleEdit() {
           />
         </label>
 
+        {/* Publication date and time */}
         <section
-  className="team-form-wide"
-  style={{
-    padding: "22px",
-    border: "2px solid #4f8fcf",
-    borderRadius: "14px",
-    background: "rgba(79, 143, 207, 0.09)",
-    display: "grid",
-    gap: "10px",
-    margin: "8px 0 18px",
-  }}
->
-  <label
-    htmlFor="article-published-at"
-    style={{
-      display: "block",
-      fontSize: "1rem",
-      fontWeight: 700,
-      marginBottom: "4px",
-    }}
-  >
-    PUBLICATION DATE &amp; TIME
-  </label>
+          className="team-form-wide"
+          style={{
+            padding: "22px",
+            border: "2px solid #4f8fcf",
+            borderRadius: "14px",
+            background: "rgba(79, 143, 207, 0.09)",
+            display: "grid",
+            gap: "10px",
+            margin: "8px 0 18px",
+          }}
+        >
+          <label
+            htmlFor="article-published-at"
+            style={{
+              display: "block",
+              fontSize: "1rem",
+              fontWeight: 700,
+              marginBottom: "4px",
+            }}
+          >
+            PUBLICATION DATE &amp; TIME
+          </label>
 
-  <input
-    id="article-published-at"
-    name="published_at"
-    type="datetime-local"
-    value={form.published_at}
-    onChange={(e) =>
-      change("published_at", e.target.value)
-    }
-    style={{
-      width: "100%",
-      minHeight: "48px",
-      padding: "12px 14px",
-      border: "1px solid #4f8fcf",
-      borderRadius: "9px",
-      background: "#ffffff",
-      color: "#18324b",
-      fontSize: "1rem",
-      boxSizing: "border-box",
-    }}
-  />
-
-  <small style={{ display: "block", lineHeight: 1.6 }}>
-    Set the publication date and time for this article.
-    Leave this blank if you want to hide the date.
-  </small>
-</section>
           <input
+            id="article-published-at"
+            name="published_at"
             type="datetime-local"
             value={form.published_at}
             onChange={(e) =>
               change("published_at", e.target.value)
             }
+            style={{
+              display: "block",
+              width: "100%",
+              minHeight: "48px",
+              padding: "12px 14px",
+              border: "1px solid #4f8fcf",
+              borderRadius: "9px",
+              background: "#ffffff",
+              color: "#18324b",
+              fontSize: "1rem",
+              boxSizing: "border-box",
+            }}
           />
-          <small>
-            Choose the date and time displayed on the
-            public article page. Leave blank to hide
-            the date.
+
+          <small
+            style={{
+              display: "block",
+              lineHeight: 1.6,
+            }}
+          >
+            Set the publication date and time for this
+            article. Leave blank if you want to hide the
+            date.
           </small>
-        </label>
-                <label className="team-form-wide">
+        </section>
+
+        <label className="team-form-wide">
           Summary / excerpt
           <textarea
             rows={3}
