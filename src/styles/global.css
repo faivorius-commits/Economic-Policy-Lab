@@ -2340,3 +2340,39 @@ header.site-header a.brand .brand-name span {
     padding: 15px;
   }
 }
+
+/* EPL WORDMARK — COLORS MATCH THE LOGO */
+
+.site-header .brand-name .brand-letter-e {
+  color: #e5ad52 !important;
+}
+
+.site-header .brand-name .brand-letter-p,
+.site-header .brand-name .brand-letter-l {
+  color: #5274b4 !important;
+}
+
+.site-header .brand-name .brand-rest {
+  color: #263d61 !important;
+}
+
+/* Keep the wordmark italic and bold */
+.site-header a.brand .brand-name,
+.site-header a.brand .brand-name span {
+  font-family: "Inter", Arial, sans-serif !important;
+  font-style: italic !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.035em !important;
+}
+
+/* Add comfortable spacing beside the logo */
+.site-header a.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.site-header .brand-name {
+  white-space: nowrap;
+  line-height: 1.2;
+}
