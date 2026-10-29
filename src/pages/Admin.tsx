@@ -1,4 +1,3 @@
-
 import {
   useCallback,
   useEffect,
@@ -149,6 +148,7 @@ export default function Admin() {
         profile.display_name || session.user.email || "Administrator"
       );
       setReady(true);
+
       await refreshAll();
 
       if (active) setMessage("");
@@ -436,6 +436,7 @@ export default function Admin() {
         /[^a-zA-Z0-9._-]/g,
         "-"
       );
+
       const path = `${crypto.randomUUID()}-${safeName}`;
 
       const { error } = await supabase.storage
@@ -614,6 +615,7 @@ export default function Admin() {
           <p className="eyebrow">
             Economic Policy Lab · Administration
           </p>
+
           <h1>Editorial dashboard</h1>
           <p>Signed in as {identity}</p>
         </div>
@@ -633,26 +635,30 @@ export default function Admin() {
         </div>
       </header>
 
+      {/* Dashboard statistics */}
       <section className="admin-stats">
         <div>
           <span>Total items</span>
           <strong>{items.length}</strong>
         </div>
+
         <div>
           <span>Pending review</span>
           <strong>{pendingCount}</strong>
         </div>
+
         <div>
           <span>Published</span>
           <strong>{published.length}</strong>
         </div>
+
         <div>
           <span>Highlights</span>
           <strong>{featured.length}</strong>
         </div>
       </section>
 
-      {/* Pending Review — visible immediately after admin login */}
+      {/* Pending article review */}
       <section className="admin-queue pending-review-panel">
         <div className="admin-queue-title">
           <div>
@@ -678,9 +684,7 @@ export default function Admin() {
                   key={item.id}
                 >
                   <div className="pending-review-info">
-                    <strong>
-                      {item.title || "Untitled"}
-                    </strong>
+                    <strong>{item.title || "Untitled"}</strong>
 
                     <span>
                       {item.content_type || "Article"} ·{" "}
@@ -702,9 +706,7 @@ export default function Admin() {
                       type="button"
                       className="approve-button"
                       disabled={busy}
-                      onClick={() =>
-                        void approveArticle(item)
-                      }
+                      onClick={() => void approveArticle(item)}
                     >
                       ✓ Approve
                     </button>
@@ -730,12 +732,13 @@ export default function Admin() {
         )}
       </section>
 
+      {/* Admin editor navigation */}
       <nav className="editor-tabs" aria-label="Editor sections">
-        
-
         <button
           type="button"
-          className={tab === "articles" ? "editor-tab active" : "editor-tab"}
+          className={
+            tab === "articles" ? "editor-tab active" : "editor-tab"
+          }
           onClick={() => setTab("articles")}
         >
           Articles
@@ -743,7 +746,9 @@ export default function Admin() {
 
         <button
           type="button"
-          className={tab === "highlights" ? "editor-tab active" : "editor-tab"}
+          className={
+            tab === "highlights" ? "editor-tab active" : "editor-tab"
+          }
           onClick={() => setTab("highlights")}
         >
           Homepage Highlights
@@ -751,7 +756,9 @@ export default function Admin() {
 
         <button
           type="button"
-          className={tab === "teams" ? "editor-tab active" : "editor-tab"}
+          className={
+            tab === "teams" ? "editor-tab active" : "editor-tab"
+          }
           onClick={() => setTab("teams")}
         >
           Our Teams
@@ -764,12 +771,24 @@ export default function Admin() {
         </p>
       )}
 
+      {/* ARTICLES */}
       {tab === "articles" && (
         <section className="admin-queue">
           <div className="admin-queue-title">
-            <h2>Content queue</h2>
+            <div>
+              <h2>Content queue</h2>
+              <p>Manage submissions and create new articles.</p>
+            </div>
 
             <div className="admin-actions">
+              {/* NEW: Create Article button */}
+              <Link
+                className="epl-button admin-create-article"
+                to="/member/write"
+              >
+                + Create Article
+              </Link>
+
               <button
                 type="button"
                 className="text-button"
@@ -821,7 +840,9 @@ export default function Admin() {
                       <div className="admin-row-actions">
                         <Link
                           className="text-button"
-                          to={`/member/write?id=${encodeURIComponent(item.id)}`}
+                          to={`/member/write?id=${encodeURIComponent(
+                            item.id
+                          )}`}
                         >
                           Edit
                         </Link>
@@ -840,7 +861,9 @@ export default function Admin() {
                             type="button"
                             className="reject-button"
                             disabled={busy}
-                            onClick={() => void changeStatus(item, "rejected")}
+                            onClick={() =>
+                              void changeStatus(item, "rejected")
+                            }
                           >
                             ✕ Reject
                           </button>
@@ -850,17 +873,23 @@ export default function Admin() {
                           <button
                             type="button"
                             disabled={busy}
-                            onClick={() => void changeStatus(item, "archived")}
+                            onClick={() =>
+                              void changeStatus(item, "archived")
+                            }
                           >
                             Archive
                           </button>
                         )}
 
-                        {["archived", "rejected"].includes(item.status || "") && (
+                        {["archived", "rejected"].includes(
+                          item.status || ""
+                        ) && (
                           <button
                             type="button"
                             disabled={busy}
-                            onClick={() => void changeStatus(item, "draft")}
+                            onClick={() =>
+                              void changeStatus(item, "draft")
+                            }
                           >
                             Restore
                           </button>
@@ -871,7 +900,9 @@ export default function Admin() {
                             type="button"
                             className="danger-action"
                             disabled={busy}
-                            onClick={() => void changeStatus(item, "deleted")}
+                            onClick={() =>
+                              void changeStatus(item, "deleted")
+                            }
                           >
                             Delete
                           </button>
@@ -892,6 +923,7 @@ export default function Admin() {
         </section>
       )}
 
+      {/* HOMEPAGE HIGHLIGHTS */}
       {tab === "highlights" && (
         <section className="admin-queue">
           <div className="admin-queue-title">
@@ -943,22 +975,30 @@ export default function Admin() {
                           disabled={busy}
                           onChange={() => void toggleFeatured(item)}
                         />
+
                         <span>
-                          {item.is_featured ? "Featured" : "Not featured"}
+                          {item.is_featured
+                            ? "Featured"
+                            : "Not featured"}
                         </span>
                       </label>
                     </td>
 
                     <td>
                       <input
-                        aria-label={`Display order for ${item.title || "article"}`}
+                        aria-label={`Display order for ${
+                          item.title || "article"
+                        }`}
                         className="featured-order-input"
                         type="number"
                         min="1"
                         defaultValue={item.featured_order || 1}
                         disabled={!item.is_featured || busy}
                         onBlur={(event) =>
-                          void saveFeaturedOrder(item, event.currentTarget.value)
+                          void saveFeaturedOrder(
+                            item,
+                            event.currentTarget.value
+                          )
                         }
                       />
                     </td>
@@ -978,11 +1018,17 @@ export default function Admin() {
         </section>
       )}
 
+      {/* TEAM MANAGEMENT */}
       {tab === "teams" && (
         <section className="admin-queue">
           <div className="admin-queue-title">
             <div>
-              <h2>{editingId ? "Edit team member" : "Add a team member"}</h2>
+              <h2>
+                {editingId
+                  ? "Edit team member"
+                  : "Add a team member"}
+              </h2>
+
               <p>
                 Manage the people displayed on the public Our Teams page.
               </p>
@@ -993,14 +1039,20 @@ export default function Admin() {
             </Link>
           </div>
 
-          <form className="team-editor-form" onSubmit={saveTeamMember}>
+          <form
+            className="team-editor-form"
+            onSubmit={saveTeamMember}
+          >
             <label>
               Full name *
               <input
                 required
                 value={teamForm.name}
                 onChange={(event) =>
-                  setTeamForm({ ...teamForm, name: event.target.value })
+                  setTeamForm({
+                    ...teamForm,
+                    name: event.target.value,
+                  })
                 }
               />
             </label>
@@ -1012,7 +1064,10 @@ export default function Admin() {
                 value={teamForm.role_title}
                 placeholder="e.g. Founder, Overall Head, Research Lead"
                 onChange={(event) =>
-                  setTeamForm({ ...teamForm, role_title: event.target.value })
+                  setTeamForm({
+                    ...teamForm,
+                    role_title: event.target.value,
+                  })
                 }
               />
             </label>
@@ -1054,7 +1109,10 @@ export default function Admin() {
                 value={teamForm.bio}
                 placeholder="Write a short professional description."
                 onChange={(event) =>
-                  setTeamForm({ ...teamForm, bio: event.target.value })
+                  setTeamForm({
+                    ...teamForm,
+                    bio: event.target.value,
+                  })
                 }
               />
             </label>
@@ -1067,6 +1125,7 @@ export default function Admin() {
                 disabled={busy}
                 onChange={(event) => void uploadTeamImage(event)}
               />
+
               <span className="admin-footnote">
                 Image files only, maximum 5 MB.
               </span>
@@ -1074,13 +1133,19 @@ export default function Admin() {
 
             {teamForm.image_url && (
               <div className="team-photo-preview team-form-wide">
-                <img src={teamForm.image_url} alt="Team member preview" />
+                <img
+                  src={teamForm.image_url}
+                  alt="Team member preview"
+                />
 
                 <button
                   type="button"
                   className="text-button"
                   onClick={() =>
-                    setTeamForm({ ...teamForm, image_url: "" })
+                    setTeamForm({
+                      ...teamForm,
+                      image_url: "",
+                    })
                   }
                 >
                   Remove photo
@@ -1117,7 +1182,11 @@ export default function Admin() {
             </label>
 
             <div className="team-form-actions team-form-wide">
-              <button type="submit" className="epl-button" disabled={busy}>
+              <button
+                type="submit"
+                className="epl-button"
+                disabled={busy}
+              >
                 {busy
                   ? "Saving..."
                   : editingId
@@ -1178,10 +1247,14 @@ export default function Admin() {
                     </td>
 
                     <td>
-                      {member.section === "board" ? "Leadership" : "Division"}
+                      {member.section === "board"
+                        ? "Leadership"
+                        : "Division"}
                     </td>
 
-                    <td>{member.is_active ? "Visible" : "Hidden"}</td>
+                    <td>
+                      {member.is_active ? "Visible" : "Hidden"}
+                    </td>
 
                     <td>
                       <div className="admin-row-actions">
