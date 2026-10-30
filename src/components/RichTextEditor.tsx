@@ -18,7 +18,7 @@ const buttonStyle: React.CSSProperties = {
   fontWeight: 500,
   cursor: "pointer",
   whiteSpace: "nowrap",
-  minHeight: 34,
+  minHeight: 35,
 };
 
 const primaryButtonStyle: React.CSSProperties = {
@@ -40,6 +40,7 @@ export default function RichTextEditor({
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
   const [wordCount, setWordCount] = useState(0);
+  const [showToolbar, setShowToolbar] = useState(true);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -50,27 +51,23 @@ export default function RichTextEditor({
 
     const temp = document.createElement("div");
     temp.innerHTML = value || "";
-    const text = temp.textContent || "";
-    const words = text.trim()
-      ? text.trim().split(/\s+/).length
-      : 0;
 
-    setWordCount(words);
+    const text = temp.textContent || "";
+    setWordCount(
+      text.trim() ? text.trim().split(/\s+/).length : 0
+    );
   }, [value]);
 
   function updateContent() {
     const editor = editorRef.current;
     if (!editor) return;
 
-    const html = editor.innerHTML;
-    onChange(html);
+    onChange(editor.innerHTML);
 
     const text = editor.innerText || "";
-    const words = text.trim()
-      ? text.trim().split(/\s+/).length
-      : 0;
-
-    setWordCount(words);
+    setWordCount(
+      text.trim() ? text.trim().split(/\s+/).length : 0
+    );
   }
 
   function rememberSelection() {
@@ -81,9 +78,12 @@ export default function RichTextEditor({
       editor &&
       selection &&
       selection.rangeCount > 0 &&
-      editor.contains(selection.getRangeAt(0).commonAncestorContainer)
+      editor.contains(
+        selection.getRangeAt(0).commonAncestorContainer
+      )
     ) {
-      savedRange.current = selection.getRangeAt(0).cloneRange();
+      savedRange.current =
+        selection.getRangeAt(0).cloneRange();
     }
   }
 
@@ -91,22 +91,24 @@ export default function RichTextEditor({
     const editor = editorRef.current;
     const selection = window.getSelection();
 
-    if (!editor || !selection || !savedRange.current) {
-      editor?.focus();
-      return;
-    }
+    if (!editor || !selection) return;
 
     editor.focus();
 
-    try {
-      selection.removeAllRanges();
-      selection.addRange(savedRange.current);
-    } catch {
-      savedRange.current = null;
+    if (savedRange.current) {
+      try {
+        selection.removeAllRanges();
+        selection.addRange(savedRange.current);
+      } catch {
+        savedRange.current = null;
+      }
     }
   }
 
-  function runCommand(command: string, argument?: string) {
+  function runCommand(
+    command: string,
+    argument?: string
+  ) {
     restoreSelection();
 
     document.execCommand(command, false, argument);
@@ -115,7 +117,9 @@ export default function RichTextEditor({
     rememberSelection();
   }
 
-  function applyAlignment(alignment: "Left" | "Center" | "Right" | "Full") {
+  function applyAlignment(
+    alignment: "Left" | "Center" | "Right" | "Full"
+  ) {
     const commands: Record<string, string> = {
       Left: "justifyLeft",
       Center: "justifyCenter",
@@ -143,11 +147,15 @@ export default function RichTextEditor({
       !trimmedUrl.startsWith("http://") &&
       !trimmedUrl.startsWith("mailto:")
     ) {
-      setMessage("Please enter a valid URL beginning with https:// or http://.");
+      setMessage("Please enter a valid URL.");
       return;
     }
 
-    document.execCommand("createLink", false, trimmedUrl);
+    document.execCommand(
+      "createLink",
+      false,
+      trimmedUrl
+    );
 
     updateContent();
     rememberSelection();
@@ -191,7 +199,9 @@ export default function RichTextEditor({
       } = await supabase.auth.getUser();
 
       if (userError || !user) {
-        throw new Error("Please sign in before uploading an image.");
+        throw new Error(
+          "Please sign in before uploading an image."
+        );
       }
 
       const safeName = file.name.replace(
@@ -199,7 +209,8 @@ export default function RichTextEditor({
         "-"
       );
 
-      const filePath = `${user.id}/${Date.now()}-${safeName}`;
+      const filePath =
+        `${user.id}/${Date.now()}-${safeName}`;
 
       const { error: uploadError } = await supabase.storage
         .from("article-images")
@@ -218,7 +229,9 @@ export default function RichTextEditor({
       const editor = editorRef.current;
 
       if (!editor) {
-        throw new Error("Article editor is unavailable.");
+        throw new Error(
+          "Article editor is unavailable."
+        );
       }
 
       restoreSelection();
@@ -251,19 +264,27 @@ export default function RichTextEditor({
         <p><br></p>
       `;
 
-      document.execCommand("insertHTML", false, imageHtml);
+      document.execCommand(
+        "insertHTML",
+        false,
+        imageHtml
+      );
 
       updateContent();
       rememberSelection();
 
-      setMessage("Image inserted. You can edit its caption.");
+      setMessage(
+        "Image inserted. You can edit its caption."
+      );
     } catch (error) {
       const detail =
         error instanceof Error
           ? error.message
           : "Unknown upload error";
 
-      setMessage("Could not upload image: " + detail);
+      setMessage(
+        "Could not upload image: " + detail
+      );
     } finally {
       setUploading(false);
 
@@ -285,12 +306,17 @@ export default function RichTextEditor({
         type="button"
         title={label}
         aria-label={label}
-        style={{ ...buttonStyle, ...extraStyle }}
+        style={{
+          ...buttonStyle,
+          ...extraStyle,
+        }}
         onMouseDown={event => {
           rememberSelection();
           event.preventDefault();
         }}
-        onClick={() => runCommand(command, argument)}
+        onClick={() =>
+          runCommand(command, argument)
+        }
       >
         {label}
       </button>
@@ -326,224 +352,291 @@ export default function RichTextEditor({
         color: "#26364a",
       }}
     >
-      {/* STICKY TOOLBAR */}
-      <div
-        role="toolbar"
-        aria-label="Article formatting tools"
-        style={{
-          position: "sticky",
-          top: 8,
-          zIndex: 30,
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          gap: 6,
-          padding: 10,
-          border: "1px solid #d8e0eb",
-          borderRadius: 10,
-          background: "rgba(248, 251, 255, 0.97)",
-          backdropFilter: "blur(12px)",
-          boxShadow: "0 4px 16px rgba(25, 55, 90, 0.08)",
-          marginBottom: 12,
-        }}
-      >
-        {/* HISTORY */}
-        {tool("↶ Undo", "undo")}
-        {tool("↷ Redo", "redo")}
+      {/* TOOLBAR */}
+      {showToolbar && (
+        <div
+          role="toolbar"
+          aria-label="Article formatting tools"
+          style={{
+            position: "sticky",
+            top: 8,
+            zIndex: 30,
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 6,
+            padding: 10,
+            border: "1px solid #d8e0eb",
+            borderRadius: 10,
+            background: "rgba(248, 251, 255, 0.97)",
+            backdropFilter: "blur(12px)",
+            boxShadow:
+              "0 4px 16px rgba(25, 55, 90, 0.08)",
+            marginBottom: 12,
+          }}
+        >
+          {/* HISTORY */}
+          {tool("↶ Undo", "undo")}
+          {tool("↷ Redo", "redo")}
 
-        {separator()}
+          {separator()}
 
-        {/* PARAGRAPH */}
+          {/* PARAGRAPH */}
+          <button
+            type="button"
+            style={buttonStyle}
+            onMouseDown={event => {
+              rememberSelection();
+              event.preventDefault();
+            }}
+            onClick={() =>
+              runCommand("formatBlock", "p")
+            }
+          >
+            Paragraph
+          </button>
+
+          <button
+            type="button"
+            style={buttonStyle}
+            onMouseDown={event => {
+              rememberSelection();
+              event.preventDefault();
+            }}
+            onClick={() =>
+              runCommand("formatBlock", "h2")
+            }
+          >
+            H2
+          </button>
+
+          <button
+            type="button"
+            style={buttonStyle}
+            onMouseDown={event => {
+              rememberSelection();
+              event.preventDefault();
+            }}
+            onClick={() =>
+              runCommand("formatBlock", "h3")
+            }
+          >
+            H3
+          </button>
+
+          <button
+            type="button"
+            style={buttonStyle}
+            onMouseDown={event => {
+              rememberSelection();
+              event.preventDefault();
+            }}
+            onClick={() =>
+              runCommand("formatBlock", "blockquote")
+            }
+          >
+            Quote
+          </button>
+
+          {separator()}
+
+          {/* TEXT FORMATTING */}
+          {tool("B Bold", "bold", undefined, {
+            fontWeight: 800,
+          })}
+
+          {tool("I Italic", "italic", undefined, {
+            fontStyle: "italic",
+          })}
+
+          {tool("U Underline", "underline", undefined, {
+            textDecoration: "underline",
+          })}
+
+          {tool("S Strike", "strikeThrough", undefined, {
+            textDecoration: "line-through",
+          })}
+
+          {tool("x²", "superscript")}
+          {tool("x₂", "subscript")}
+
+          {separator()}
+
+          {/* TEXT ALIGNMENT */}
+          <button
+            type="button"
+            title="Align left"
+            style={buttonStyle}
+            onMouseDown={event => {
+              rememberSelection();
+              event.preventDefault();
+            }}
+            onClick={() => applyAlignment("Left")}
+          >
+            ☰ Left
+          </button>
+
+          <button
+            type="button"
+            title="Align center"
+            style={buttonStyle}
+            onMouseDown={event => {
+              rememberSelection();
+              event.preventDefault();
+            }}
+            onClick={() => applyAlignment("Center")}
+          >
+            ☷ Center
+          </button>
+
+          <button
+            type="button"
+            title="Align right"
+            style={buttonStyle}
+            onMouseDown={event => {
+              rememberSelection();
+              event.preventDefault();
+            }}
+            onClick={() => applyAlignment("Right")}
+          >
+            ☰ Right
+          </button>
+
+          <button
+            type="button"
+            title="Justify text"
+            style={buttonStyle}
+            onMouseDown={event => {
+              rememberSelection();
+              event.preventDefault();
+            }}
+            onClick={() => applyAlignment("Full")}
+          >
+            ☷ Justify
+          </button>
+
+          {separator()}
+
+          {/* LISTS */}
+          {tool("• Bullets", "insertUnorderedList")}
+          {tool("1. Numbered", "insertOrderedList")}
+          {tool("→ Indent", "indent")}
+          {tool("← Outdent", "outdent")}
+
+          {separator()}
+
+          {/* LINKS */}
+          <button
+            type="button"
+            style={buttonStyle}
+            onMouseDown={event => {
+              rememberSelection();
+              event.preventDefault();
+            }}
+            onClick={insertLink}
+          >
+            🔗 Link
+          </button>
+
+          {tool("Unlink", "unlink")}
+          {tool("— Divider", "insertHorizontalRule")}
+
+          <button
+            type="button"
+            style={buttonStyle}
+            onMouseDown={event => {
+              rememberSelection();
+              event.preventDefault();
+            }}
+            onClick={clearFormatting}
+          >
+            Clear Format
+          </button>
+
+          {separator()}
+
+          {/* IMAGE UPLOAD */}
+          <button
+            type="button"
+            style={primaryButtonStyle}
+            disabled={uploading}
+            onMouseDown={event => {
+              rememberSelection();
+              event.preventDefault();
+            }}
+            onClick={() =>
+              fileInputRef.current?.click()
+            }
+          >
+            {uploading
+              ? "Uploading..."
+              : "＋ Insert Image"}
+          </button>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            hidden
+            onChange={event => {
+              const file = event.target.files?.[0];
+
+              if (file) {
+                void uploadSupportingImage(file);
+              }
+            }}
+          />
+
+          {separator()}
+
+          {/* HIDE TOOLBAR */}
+          <button
+            type="button"
+            title="Hide Toolbar"
+            style={{
+              ...buttonStyle,
+              background: "#edf3fa",
+              color: "#24558a",
+              fontWeight: 700,
+            }}
+            onMouseDown={event =>
+              event.preventDefault()
+            }
+            onClick={() => setShowToolbar(false)}
+          >
+            ⌃ Hide Toolbar
+          </button>
+        </div>
+      )}
+
+      {/* SHOW TOOLBAR FLOATING BUTTON */}
+      {!showToolbar && (
         <button
           type="button"
-          style={buttonStyle}
-          onMouseDown={event => {
-            rememberSelection();
-            event.preventDefault();
+          title="Show Toolbar"
+          aria-label="Show Toolbar"
+          onClick={() => setShowToolbar(true)}
+          style={{
+            position: "fixed",
+            right: 22,
+            bottom: 24,
+            zIndex: 100,
+            width: 52,
+            height: 52,
+            borderRadius: "50%",
+            border: "none",
+            background: "#24558a",
+            color: "#ffffff",
+            fontSize: 22,
+            fontWeight: 700,
+            cursor: "pointer",
+            boxShadow:
+              "0 5px 18px rgba(20, 55, 90, 0.25)",
           }}
-          onClick={() => runCommand("formatBlock", "p")}
         >
-          Paragraph
+          ☰
         </button>
-
-        <button
-          type="button"
-          style={buttonStyle}
-          onMouseDown={event => {
-            rememberSelection();
-            event.preventDefault();
-          }}
-          onClick={() => runCommand("formatBlock", "h2")}
-        >
-          H2
-        </button>
-
-        <button
-          type="button"
-          style={buttonStyle}
-          onMouseDown={event => {
-            rememberSelection();
-            event.preventDefault();
-          }}
-          onClick={() => runCommand("formatBlock", "h3")}
-        >
-          H3
-        </button>
-
-        <button
-          type="button"
-          style={buttonStyle}
-          onMouseDown={event => {
-            rememberSelection();
-            event.preventDefault();
-          }}
-          onClick={() => runCommand("formatBlock", "blockquote")}
-        >
-          Quote
-        </button>
-
-        {separator()}
-
-        {/* TEXT FORMATTING */}
-        {tool("B Bold", "bold", undefined, {
-          fontWeight: 800,
-        })}
-
-        {tool("I Italic", "italic", undefined, {
-          fontStyle: "italic",
-        })}
-
-        {tool("U Underline", "underline", undefined, {
-          textDecoration: "underline",
-        })}
-
-        {tool("S Strike", "strikeThrough", undefined, {
-          textDecoration: "line-through",
-        })}
-
-        {tool("x²", "superscript")}
-        {tool("x₂", "subscript")}
-
-        {separator()}
-
-        {/* ALIGNMENT */}
-        <button
-          type="button"
-          title="Align left"
-          style={buttonStyle}
-          onMouseDown={event => {
-            rememberSelection();
-            event.preventDefault();
-          }}
-          onClick={() => applyAlignment("Left")}
-        >
-          ☰ Left
-        </button>
-
-        <button
-          type="button"
-          title="Align center"
-          style={buttonStyle}
-          onMouseDown={event => {
-            rememberSelection();
-            event.preventDefault();
-          }}
-          onClick={() => applyAlignment("Center")}
-        >
-          ☷ Center
-        </button>
-
-        <button
-          type="button"
-          title="Align right"
-          style={buttonStyle}
-          onMouseDown={event => {
-            rememberSelection();
-            event.preventDefault();
-          }}
-          onClick={() => applyAlignment("Right")}
-        >
-          ☰ Right
-        </button>
-
-        <button
-          type="button"
-          title="Justify text"
-          style={buttonStyle}
-          onMouseDown={event => {
-            rememberSelection();
-            event.preventDefault();
-          }}
-          onClick={() => applyAlignment("Full")}
-        >
-          ☷ Justify
-        </button>
-
-        {separator()}
-
-        {/* LISTS */}
-        {tool("• Bullets", "insertUnorderedList")}
-        {tool("1. Numbered", "insertOrderedList")}
-        {tool("→ Indent", "indent")}
-        {tool("← Outdent", "outdent")}
-
-        {separator()}
-
-        {/* LINKS AND OTHER TOOLS */}
-        <button
-          type="button"
-          style={buttonStyle}
-          onMouseDown={event => {
-            rememberSelection();
-            event.preventDefault();
-          }}
-          onClick={insertLink}
-        >
-          🔗 Link
-        </button>
-
-        {tool("Unlink", "unlink")}
-        {tool("— Divider", "insertHorizontalRule")}
-
-        <button
-          type="button"
-          style={buttonStyle}
-          onMouseDown={event => {
-            rememberSelection();
-            event.preventDefault();
-          }}
-          onClick={clearFormatting}
-        >
-          Clear Format
-        </button>
-
-        {separator()}
-
-        {/* IMAGE UPLOAD */}
-        <button
-          type="button"
-          style={primaryButtonStyle}
-          disabled={uploading}
-          onMouseDown={event => {
-            rememberSelection();
-            event.preventDefault();
-          }}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          {uploading ? "Uploading..." : "＋ Insert Image"}
-        </button>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          hidden
-          onChange={event => {
-            const file = event.target.files?.[0];
-            if (file) void uploadSupportingImage(file);
-          }}
-        />
-      </div>
+      )}
 
       {/* STATUS MESSAGE */}
       {message && (
@@ -553,8 +646,12 @@ export default function RichTextEditor({
             margin: "8px 0 12px",
             padding: "9px 12px",
             borderRadius: 7,
-            background: isError ? "#fff1f0" : "#edf7f1",
-            color: isError ? "#b42318" : "#315b46",
+            background: isError
+              ? "#fff1f0"
+              : "#edf7f1",
+            color: isError
+              ? "#b42318"
+              : "#315b46",
             fontSize: 13,
           }}
         >
@@ -562,7 +659,7 @@ export default function RichTextEditor({
         </p>
       )}
 
-      {/* EDITOR */}
+      {/* ARTICLE EDITOR */}
       <div
         ref={editorRef}
         className="article-rich-content"
@@ -574,11 +671,11 @@ export default function RichTextEditor({
         data-placeholder="Start writing your article here..."
         onKeyUp={rememberSelection}
         onMouseUp={rememberSelection}
-        onInput={event => {
+        onInput={() => {
           updateContent();
           rememberSelection();
         }}
-        onBlur={event => {
+        onBlur={() => {
           updateContent();
         }}
         style={{
@@ -590,7 +687,8 @@ export default function RichTextEditor({
           borderRadius: 10,
           background: "#ffffff",
           color: "#26364a",
-          fontFamily: "Georgia, 'Times New Roman', serif",
+          fontFamily:
+            "Georgia, 'Times New Roman', serif",
           fontSize: 16,
           lineHeight: 1.9,
           overflowWrap: "anywhere",
@@ -598,7 +696,7 @@ export default function RichTextEditor({
         }}
       />
 
-      {/* EDITOR FOOTER */}
+      {/* WORD COUNT */}
       <div
         style={{
           display: "flex",
@@ -611,9 +709,7 @@ export default function RichTextEditor({
           fontSize: 12,
         }}
       >
-        <span>
-          {wordCount} words
-        </span>
+        <span>{wordCount} words</span>
 
         <span>
           Select text first, then choose a formatting tool.
@@ -628,9 +724,11 @@ export default function RichTextEditor({
           lineHeight: 1.6,
         }}
       >
-        Tip: Place your cursor where you want an image to appear.
-        You can edit the caption below each inserted image.
+        Tip: Place your cursor where you want an image
+        to appear. You can edit the caption below
+        each inserted image.
       </p>
     </div>
   );
 }
+
