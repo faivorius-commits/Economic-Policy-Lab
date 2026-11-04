@@ -43,7 +43,6 @@ export default function RichTextEditor({
   const [wordCount, setWordCount] = useState(0);
   const [showToolbar, setShowToolbar] = useState(true);
 
-  // Stores the active formatting tools.
   const [activeFormats, setActiveFormats] = useState<
     Record<string, boolean>
   >({});
@@ -65,7 +64,6 @@ export default function RichTextEditor({
     );
   }, [value]);
 
-  // Updates the editor content and word count.
   function updateContent() {
     const editor = editorRef.current;
     if (!editor) return;
@@ -79,7 +77,6 @@ export default function RichTextEditor({
     );
   }
 
-  // Saves the current text selection.
   function rememberSelection() {
     const editor = editorRef.current;
     const selection = window.getSelection();
@@ -97,7 +94,6 @@ export default function RichTextEditor({
     }
   }
 
-  // Restores the previously saved selection.
   function restoreSelection() {
     const editor = editorRef.current;
     const selection = window.getSelection();
@@ -116,7 +112,6 @@ export default function RichTextEditor({
     }
   }
 
-  // Detects which formatting tools are currently active.
   function refreshToolbarState() {
     const editor = editorRef.current;
     const selection = window.getSelection();
@@ -159,7 +154,7 @@ export default function RichTextEditor({
       }
     });
 
-    // Detect the current paragraph or heading format.
+    // Detect the current block format.
     try {
       const block = document
         .queryCommandValue("formatBlock")
@@ -182,7 +177,6 @@ export default function RichTextEditor({
     setActiveFormats(formats);
   }
 
-  // Visual style for active toolbar buttons.
   function activeStyle(key: string): React.CSSProperties {
     if (!activeFormats[key]) return {};
 
@@ -196,7 +190,6 @@ export default function RichTextEditor({
     };
   }
 
-  // Listen for selection changes.
   useEffect(() => {
     const handleSelectionChange = () => {
       refreshToolbarState();
@@ -215,21 +208,29 @@ export default function RichTextEditor({
     };
   }, []);
 
-  // Executes a formatting command.
+  // FIX: Apply formatBlock with angle brackets for browser compatibility.
   function runCommand(
     command: string,
     argument?: string
   ) {
     restoreSelection();
 
-    document.execCommand(command, false, argument);
+    const commandArgument =
+      command === "formatBlock" && argument
+        ? `<${argument.replace(/[<>]/g, "")}>`
+        : argument;
+
+    document.execCommand(
+      command,
+      false,
+      commandArgument
+    );
 
     updateContent();
     rememberSelection();
     refreshToolbarState();
   }
 
-  // Applies text alignment.
   function applyAlignment(
     alignment: "Left" | "Center" | "Right" | "Full"
   ) {
@@ -243,7 +244,6 @@ export default function RichTextEditor({
     runCommand(commands[alignment]);
   }
 
-  // Inserts a hyperlink.
   function insertLink() {
     restoreSelection();
 
@@ -276,7 +276,6 @@ export default function RichTextEditor({
     refreshToolbarState();
   }
 
-  // Removes formatting from selected text.
   function clearFormatting() {
     restoreSelection();
 
@@ -288,7 +287,6 @@ export default function RichTextEditor({
     refreshToolbarState();
   }
 
-  // Uploads an image to Supabase Storage.
   async function uploadSupportingImage(file: File) {
     const allowedTypes = [
       "image/jpeg",
@@ -412,7 +410,6 @@ export default function RichTextEditor({
     }
   }
 
-  // Reusable formatting button.
   function tool(
     label: string,
     command: string,
@@ -444,7 +441,6 @@ export default function RichTextEditor({
     );
   }
 
-  // Reusable paragraph and heading button.
   function blockTool(
     label: string,
     format: "p" | "h2" | "h3" | "blockquote"
@@ -467,7 +463,6 @@ export default function RichTextEditor({
           event.preventDefault();
         }}
         onClick={() => {
-          // Clicking an active heading or quote turns it off.
           if (format !== "p" && isActive) {
             runCommand("formatBlock", "p");
           } else {
@@ -480,7 +475,6 @@ export default function RichTextEditor({
     );
   }
 
-  // Reusable alignment button.
   function alignmentTool(
     label: string,
     title: string,
@@ -538,7 +532,6 @@ export default function RichTextEditor({
         color: "#26364a",
       }}
     >
-      {/* TOOLBAR */}
       {showToolbar && (
         <div
           role="toolbar"
@@ -561,13 +554,11 @@ export default function RichTextEditor({
             marginBottom: 12,
           }}
         >
-          {/* HISTORY */}
           {tool("↶ Undo", "undo")}
           {tool("↷ Redo", "redo")}
 
           {separator()}
 
-          {/* PARAGRAPH AND HEADINGS */}
           {blockTool("Paragraph", "p")}
           {blockTool("H2", "h2")}
           {blockTool("H3", "h3")}
@@ -575,7 +566,6 @@ export default function RichTextEditor({
 
           {separator()}
 
-          {/* TEXT FORMATTING */}
           {tool("B Bold", "bold", undefined, {
             fontWeight: 800,
           })}
@@ -597,7 +587,6 @@ export default function RichTextEditor({
 
           {separator()}
 
-          {/* TEXT ALIGNMENT */}
           {alignmentTool(
             "☰ Left",
             "Align left",
@@ -628,7 +617,6 @@ export default function RichTextEditor({
 
           {separator()}
 
-          {/* LISTS */}
           {tool("• Bullets", "insertUnorderedList")}
           {tool("1. Numbered", "insertOrderedList")}
           {tool("→ Indent", "indent")}
@@ -636,7 +624,6 @@ export default function RichTextEditor({
 
           {separator()}
 
-          {/* LINKS */}
           <button
             type="button"
             style={buttonStyle}
@@ -666,7 +653,6 @@ export default function RichTextEditor({
 
           {separator()}
 
-          {/* IMAGE UPLOAD */}
           <button
             type="button"
             style={primaryButtonStyle}
@@ -700,7 +686,6 @@ export default function RichTextEditor({
 
           {separator()}
 
-          {/* HIDE TOOLBAR */}
           <button
             type="button"
             title="Hide Toolbar"
@@ -720,7 +705,6 @@ export default function RichTextEditor({
         </div>
       )}
 
-      {/* SHOW TOOLBAR FLOATING BUTTON */}
       {!showToolbar && (
         <button
           type="button"
@@ -749,7 +733,6 @@ export default function RichTextEditor({
         </button>
       )}
 
-      {/* STATUS MESSAGE */}
       {message && (
         <p
           role="status"
@@ -770,7 +753,6 @@ export default function RichTextEditor({
         </p>
       )}
 
-      {/* ARTICLE EDITOR */}
       <div
         ref={editorRef}
         className="article-rich-content"
@@ -815,7 +797,6 @@ export default function RichTextEditor({
         }}
       />
 
-      {/* WORD COUNT */}
       <div
         style={{
           display: "flex",
@@ -836,7 +817,6 @@ export default function RichTextEditor({
         </span>
       </div>
 
-      {/* EDITOR TIP */}
       <p
         style={{
           margin: "0 0 12px",
