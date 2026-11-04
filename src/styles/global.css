@@ -2986,3 +2986,98 @@ button,
     font-size: 16px;
   }
 }
+
+/* =========================================
+   ECONOMIC POLICY LAB
+   EDITOR AND ARTICLE TYPOGRAPHY
+========================================= */
+
+.article-rich-content,
+.article-body {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  line-height: 1.9;
+  color: #26364a;
+  overflow-wrap: anywhere;
+}
+
+.article-rich-content p,
+.article-body p {
+  margin: 1.1em 0;
+}
+
+.article-rich-content h2,
+.article-body h2 {
+  margin: 1.5em 0 0.6em;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.7rem;
+  line-height: 1.3;
+  font-weight: 700;
+  color: #26364a;
+}
+
+.article-rich-content h3,
+.article-body h3 {
+  margin: 1.4em 0 0.5em;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.3rem;
+  line-height: 1.35;
+  font-weight: 700;
+  color: #26364a;
+}
+
+.article-rich-content blockquote,
+.article-body blockquote {
+  margin: 1.5rem 0;
+  padding-left: 1rem;
+  border-left: 3px solid #24558a;
+  color: #555;
+  font-style: italic;
+}
+
+.article-rich-content img,
+.article-body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.article-rich-content a,
+.article-body a {
+  color: #24558a;
+  text-decoration: underline;
+}
+
+.article-rich-content ul,
+.article-body ul,
+.article-rich-content ol,
+.article-body ol {
+  padding-left: 1.8em;
+  margin: 1em 0;
+}
+
+.article-rich-content li,
+.article-body li {
+  margin: 0.35em 0;
+}
+
+.article-rich-content:focus {
+  outline: none;
+}
+
+.article-rich-content:empty::before {
+  content: attr(data-placeholder);
+  color: #9aa6b5;
+  pointer-events: none;
+}
+
+@media (max-width: 760px) {
+  .article-rich-content,
+  .article-body {
+    font-size: 16px;
+  }
+
+  .article-rich-content {
+    padding: 22px 18px !important;
+  }
+}
