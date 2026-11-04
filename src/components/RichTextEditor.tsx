@@ -19,6 +19,7 @@ const buttonStyle: React.CSSProperties = {
   cursor: "pointer",
   whiteSpace: "nowrap",
   minHeight: 35,
+  transition: "all 0.15s ease",
 };
 
 const primaryButtonStyle: React.CSSProperties = {
@@ -42,6 +43,11 @@ export default function RichTextEditor({
   const [wordCount, setWordCount] = useState(0);
   const [showToolbar, setShowToolbar] = useState(true);
 
+  // Stores the active formatting tools.
+  const [activeFormats, setActiveFormats] = useState<
+    Record<string, boolean>
+  >({});
+
   useEffect(() => {
     const editor = editorRef.current;
 
@@ -53,11 +59,13 @@ export default function RichTextEditor({
     temp.innerHTML = value || "";
 
     const text = temp.textContent || "";
+
     setWordCount(
       text.trim() ? text.trim().split(/\s+/).length : 0
     );
   }, [value]);
 
+  // Updates the editor content and word count.
   function updateContent() {
     const editor = editorRef.current;
     if (!editor) return;
@@ -65,11 +73,13 @@ export default function RichTextEditor({
     onChange(editor.innerHTML);
 
     const text = editor.innerText || "";
+
     setWordCount(
       text.trim() ? text.trim().split(/\s+/).length : 0
     );
   }
 
+  // Saves the current text selection.
   function rememberSelection() {
     const editor = editorRef.current;
     const selection = window.getSelection();
@@ -87,6 +97,7 @@ export default function RichTextEditor({
     }
   }
 
+  // Restores the previously saved selection.
   function restoreSelection() {
     const editor = editorRef.current;
     const selection = window.getSelection();
@@ -105,6 +116,106 @@ export default function RichTextEditor({
     }
   }
 
+  // Detects which formatting tools are currently active.
+  function refreshToolbarState() {
+    const editor = editorRef.current;
+    const selection = window.getSelection();
+
+    if (!editor || !selection || selection.rangeCount === 0) {
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+
+    if (
+      !editor.contains(range.commonAncestorContainer)
+    ) {
+      return;
+    }
+
+    const commands = [
+      "bold",
+      "italic",
+      "underline",
+      "strikeThrough",
+      "superscript",
+      "subscript",
+      "insertUnorderedList",
+      "insertOrderedList",
+      "justifyLeft",
+      "justifyCenter",
+      "justifyRight",
+      "justifyFull",
+    ];
+
+    const formats: Record<string, boolean> = {};
+
+    commands.forEach(command => {
+      try {
+        formats[command] =
+          document.queryCommandState(command);
+      } catch {
+        formats[command] = false;
+      }
+    });
+
+    // Detect the current paragraph or heading format.
+    try {
+      const block = document
+        .queryCommandValue("formatBlock")
+        .replace(/[<>]/g, "")
+        .toLowerCase();
+
+      formats["p"] =
+        block === "p" || block === "div";
+
+      formats["h2"] = block === "h2";
+      formats["h3"] = block === "h3";
+      formats["blockquote"] = block === "blockquote";
+    } catch {
+      formats["p"] = false;
+      formats["h2"] = false;
+      formats["h3"] = false;
+      formats["blockquote"] = false;
+    }
+
+    setActiveFormats(formats);
+  }
+
+  // Visual style for active toolbar buttons.
+  function activeStyle(key: string): React.CSSProperties {
+    if (!activeFormats[key]) return {};
+
+    return {
+      background: "#dceafa",
+      color: "#174b7e",
+      borderColor: "#4f8fcf",
+      boxShadow:
+        "inset 0 0 0 1px rgba(36, 85, 138, 0.12)",
+      fontWeight: 700,
+    };
+  }
+
+  // Listen for selection changes.
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      refreshToolbarState();
+    };
+
+    document.addEventListener(
+      "selectionchange",
+      handleSelectionChange
+    );
+
+    return () => {
+      document.removeEventListener(
+        "selectionchange",
+        handleSelectionChange
+      );
+    };
+  }, []);
+
+  // Executes a formatting command.
   function runCommand(
     command: string,
     argument?: string
@@ -115,8 +226,10 @@ export default function RichTextEditor({
 
     updateContent();
     rememberSelection();
+    refreshToolbarState();
   }
 
+  // Applies text alignment.
   function applyAlignment(
     alignment: "Left" | "Center" | "Right" | "Full"
   ) {
@@ -130,6 +243,7 @@ export default function RichTextEditor({
     runCommand(commands[alignment]);
   }
 
+  // Inserts a hyperlink.
   function insertLink() {
     restoreSelection();
 
@@ -159,8 +273,10 @@ export default function RichTextEditor({
 
     updateContent();
     rememberSelection();
+    refreshToolbarState();
   }
 
+  // Removes formatting from selected text.
   function clearFormatting() {
     restoreSelection();
 
@@ -169,8 +285,10 @@ export default function RichTextEditor({
 
     updateContent();
     rememberSelection();
+    refreshToolbarState();
   }
 
+  // Uploads an image to Supabase Storage.
   async function uploadSupportingImage(file: File) {
     const allowedTypes = [
       "image/jpeg",
@@ -294,6 +412,7 @@ export default function RichTextEditor({
     }
   }
 
+  // Reusable formatting button.
   function tool(
     label: string,
     command: string,
@@ -306,17 +425,84 @@ export default function RichTextEditor({
         type="button"
         title={label}
         aria-label={label}
+        aria-pressed={Boolean(activeFormats[command])}
         style={{
           ...buttonStyle,
           ...extraStyle,
+          ...activeStyle(command),
         }}
         onMouseDown={event => {
           rememberSelection();
           event.preventDefault();
         }}
-        onClick={() =>
-          runCommand(command, argument)
-        }
+        onClick={() => {
+          runCommand(command, argument);
+        }}
+      >
+        {label}
+      </button>
+    );
+  }
+
+  // Reusable paragraph and heading button.
+  function blockTool(
+    label: string,
+    format: "p" | "h2" | "h3" | "blockquote"
+  ) {
+    const isActive = Boolean(activeFormats[format]);
+
+    return (
+      <button
+        key={format}
+        type="button"
+        title={label}
+        aria-label={label}
+        aria-pressed={isActive}
+        style={{
+          ...buttonStyle,
+          ...activeStyle(format),
+        }}
+        onMouseDown={event => {
+          rememberSelection();
+          event.preventDefault();
+        }}
+        onClick={() => {
+          // Clicking an active heading or quote turns it off.
+          if (format !== "p" && isActive) {
+            runCommand("formatBlock", "p");
+          } else {
+            runCommand("formatBlock", format);
+          }
+        }}
+      >
+        {label}
+      </button>
+    );
+  }
+
+  // Reusable alignment button.
+  function alignmentTool(
+    label: string,
+    title: string,
+    command: string,
+    alignment: "Left" | "Center" | "Right" | "Full"
+  ) {
+    return (
+      <button
+        key={command}
+        type="button"
+        title={title}
+        aria-label={title}
+        aria-pressed={Boolean(activeFormats[command])}
+        style={{
+          ...buttonStyle,
+          ...activeStyle(command),
+        }}
+        onMouseDown={event => {
+          rememberSelection();
+          event.preventDefault();
+        }}
+        onClick={() => applyAlignment(alignment)}
       >
         {label}
       </button>
@@ -381,62 +567,11 @@ export default function RichTextEditor({
 
           {separator()}
 
-          {/* PARAGRAPH */}
-          <button
-            type="button"
-            style={buttonStyle}
-            onMouseDown={event => {
-              rememberSelection();
-              event.preventDefault();
-            }}
-            onClick={() =>
-              runCommand("formatBlock", "p")
-            }
-          >
-            Paragraph
-          </button>
-
-          <button
-            type="button"
-            style={buttonStyle}
-            onMouseDown={event => {
-              rememberSelection();
-              event.preventDefault();
-            }}
-            onClick={() =>
-              runCommand("formatBlock", "h2")
-            }
-          >
-            H2
-          </button>
-
-          <button
-            type="button"
-            style={buttonStyle}
-            onMouseDown={event => {
-              rememberSelection();
-              event.preventDefault();
-            }}
-            onClick={() =>
-              runCommand("formatBlock", "h3")
-            }
-          >
-            H3
-          </button>
-
-          <button
-            type="button"
-            style={buttonStyle}
-            onMouseDown={event => {
-              rememberSelection();
-              event.preventDefault();
-            }}
-            onClick={() =>
-              runCommand("formatBlock", "blockquote")
-            }
-          >
-            Quote
-          </button>
+          {/* PARAGRAPH AND HEADINGS */}
+          {blockTool("Paragraph", "p")}
+          {blockTool("H2", "h2")}
+          {blockTool("H3", "h3")}
+          {blockTool("Quote", "blockquote")}
 
           {separator()}
 
@@ -463,57 +598,33 @@ export default function RichTextEditor({
           {separator()}
 
           {/* TEXT ALIGNMENT */}
-          <button
-            type="button"
-            title="Align left"
-            style={buttonStyle}
-            onMouseDown={event => {
-              rememberSelection();
-              event.preventDefault();
-            }}
-            onClick={() => applyAlignment("Left")}
-          >
-            ☰ Left
-          </button>
+          {alignmentTool(
+            "☰ Left",
+            "Align left",
+            "justifyLeft",
+            "Left"
+          )}
 
-          <button
-            type="button"
-            title="Align center"
-            style={buttonStyle}
-            onMouseDown={event => {
-              rememberSelection();
-              event.preventDefault();
-            }}
-            onClick={() => applyAlignment("Center")}
-          >
-            ☷ Center
-          </button>
+          {alignmentTool(
+            "☷ Center",
+            "Align center",
+            "justifyCenter",
+            "Center"
+          )}
 
-          <button
-            type="button"
-            title="Align right"
-            style={buttonStyle}
-            onMouseDown={event => {
-              rememberSelection();
-              event.preventDefault();
-            }}
-            onClick={() => applyAlignment("Right")}
-          >
-            ☰ Right
-          </button>
+          {alignmentTool(
+            "☰ Right",
+            "Align right",
+            "justifyRight",
+            "Right"
+          )}
 
-          <button
-            type="button"
-            title="Justify text"
-            style={buttonStyle}
-            onMouseDown={event => {
-              rememberSelection();
-              event.preventDefault();
-            }}
-            onClick={() => applyAlignment("Full")}
-          >
-            ☷ Justify
-          </button>
+          {alignmentTool(
+            "☷ Justify",
+            "Justify text",
+            "justifyFull",
+            "Full"
+          )}
 
           {separator()}
 
@@ -669,11 +780,19 @@ export default function RichTextEditor({
         aria-label={label}
         aria-multiline="true"
         data-placeholder="Start writing your article here..."
-        onKeyUp={rememberSelection}
-        onMouseUp={rememberSelection}
+        onKeyUp={() => {
+          rememberSelection();
+          refreshToolbarState();
+        }}
+        onMouseUp={() => {
+          rememberSelection();
+          refreshToolbarState();
+        }}
+        onFocus={refreshToolbarState}
         onInput={() => {
           updateContent();
           rememberSelection();
+          refreshToolbarState();
         }}
         onBlur={() => {
           updateContent();
@@ -712,10 +831,12 @@ export default function RichTextEditor({
         <span>{wordCount} words</span>
 
         <span>
-          Select text first, then choose a formatting tool.
+          Active tools are highlighted in blue.
+          Click the same tool again to turn it off.
         </span>
       </div>
 
+      {/* EDITOR TIP */}
       <p
         style={{
           margin: "0 0 12px",
@@ -731,4 +852,3 @@ export default function RichTextEditor({
     </div>
   );
 }
-
