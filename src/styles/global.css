@@ -3077,8 +3077,8 @@ button,
     font-size: 16px;
   }
 
-  .article-rich-content {
-    padding: 22px 18px !important;
+  .epl-editor .epl-writing-field {
+    padding: 22px 17px !important;
   }
 }
 
