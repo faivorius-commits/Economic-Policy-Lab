@@ -18,8 +18,8 @@ const buttonStyle: React.CSSProperties = {
   fontWeight: 500,
   cursor: "pointer",
   whiteSpace: "nowrap",
-  minHeight: 35,
-  transition: "all 0.15s ease",
+  minHeight: 38,
+  touchAction: "manipulation",
 };
 
 const primaryButtonStyle: React.CSSProperties = {
@@ -42,7 +42,6 @@ export default function RichTextEditor({
   const [message, setMessage] = useState("");
   const [wordCount, setWordCount] = useState(0);
   const [showToolbar, setShowToolbar] = useState(true);
-
   const [activeFormats, setActiveFormats] = useState<
     Record<string, boolean>
   >({});
@@ -56,7 +55,6 @@ export default function RichTextEditor({
 
     const temp = document.createElement("div");
     temp.innerHTML = value || "";
-
     const text = temp.textContent || "";
 
     setWordCount(
@@ -68,10 +66,10 @@ export default function RichTextEditor({
     const editor = editorRef.current;
     if (!editor) return;
 
-    onChange(editor.innerHTML);
+    const html = editor.innerHTML;
+    onChange(html);
 
     const text = editor.innerText || "";
-
     setWordCount(
       text.trim() ? text.trim().split(/\s+/).length : 0
     );
@@ -82,15 +80,17 @@ export default function RichTextEditor({
     const selection = window.getSelection();
 
     if (
-      editor &&
-      selection &&
-      selection.rangeCount > 0 &&
-      editor.contains(
-        selection.getRangeAt(0).commonAncestorContainer
-      )
+      !editor ||
+      !selection ||
+      selection.rangeCount === 0
     ) {
-      savedRange.current =
-        selection.getRangeAt(0).cloneRange();
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+
+    if (editor.contains(range.commonAncestorContainer)) {
+      savedRange.current = range.cloneRange();
     }
   }
 
@@ -98,17 +98,28 @@ export default function RichTextEditor({
     const editor = editorRef.current;
     const selection = window.getSelection();
 
-    if (!editor || !selection) return;
+    if (!editor || !selection) return false;
 
-    editor.focus();
+    editor.focus({ preventScroll: true });
 
-    if (savedRange.current) {
-      try {
-        selection.removeAllRanges();
-        selection.addRange(savedRange.current);
-      } catch {
+    if (!savedRange.current) return false;
+
+    try {
+      if (
+        !editor.contains(
+          savedRange.current.commonAncestorContainer
+        )
+      ) {
         savedRange.current = null;
+        return false;
       }
+
+      selection.removeAllRanges();
+      selection.addRange(savedRange.current);
+      return true;
+    } catch {
+      savedRange.current = null;
+      return false;
     }
   }
 
@@ -122,9 +133,7 @@ export default function RichTextEditor({
 
     const range = selection.getRangeAt(0);
 
-    if (
-      !editor.contains(range.commonAncestorContainer)
-    ) {
+    if (!editor.contains(range.commonAncestorContainer)) {
       return;
     }
 
@@ -147,46 +156,28 @@ export default function RichTextEditor({
 
     commands.forEach(command => {
       try {
-        formats[command] =
-          document.queryCommandState(command);
+        formats[command] = document.queryCommandState(command);
       } catch {
         formats[command] = false;
       }
     });
 
-    try {
-      const block = document
-        .queryCommandValue("formatBlock")
-        .replace(/[<>]/g, "")
-        .toLowerCase();
+    const node =
+      range.startContainer.nodeType === Node.TEXT_NODE
+        ? range.startContainer.parentElement
+        : range.startContainer as HTMLElement;
 
-      formats["p"] =
-        block === "p" || block === "div";
+    const block = node?.closest(
+      "p, div, h2, h3, blockquote"
+    );
 
-      formats["h2"] = block === "h2";
-      formats["h3"] = block === "h3";
-      formats["blockquote"] = block === "blockquote";
-    } catch {
-      formats["p"] = false;
-      formats["h2"] = false;
-      formats["h3"] = false;
-      formats["blockquote"] = false;
-    }
+    formats.p = block?.tagName === "P" ||
+      block?.tagName === "DIV";
+    formats.h2 = block?.tagName === "H2";
+    formats.h3 = block?.tagName === "H3";
+    formats.blockquote = block?.tagName === "BLOCKQUOTE";
 
     setActiveFormats(formats);
-  }
-
-  function activeStyle(key: string): React.CSSProperties {
-    if (!activeFormats[key]) return {};
-
-    return {
-      background: "#dceafa",
-      color: "#174b7e",
-      borderColor: "#4f8fcf",
-      boxShadow:
-        "inset 0 0 0 1px rgba(36, 85, 138, 0.12)",
-      fontWeight: 700,
-    };
   }
 
   useEffect(() => {
@@ -205,29 +196,51 @@ export default function RichTextEditor({
         handleSelectionChange
       );
     };
-  }, []);
+  });
 
-  // Improved heading formatting compatibility.
   function runCommand(
     command: string,
     argument?: string
   ) {
+    const editor = editorRef.current;
+    if (!editor) return;
+
     restoreSelection();
+
+    try {
+      document.execCommand(
+        "styleWithCSS",
+        false,
+        "false"
+      );
+    } catch {
+      // Continue with the formatting command.
+    }
 
     const commandArgument =
       command === "formatBlock" && argument
-        ? `<${argument.replace(/[<>]/g, "")}>`
+        ? `<${argument}>`
         : argument;
 
-    document.execCommand(
-      command,
-      false,
-      commandArgument
-    );
+    try {
+      document.execCommand(
+        command,
+        false,
+        commandArgument
+      );
+    } catch (error) {
+      console.error("Formatting error:", error);
+    }
 
     updateContent();
     rememberSelection();
     refreshToolbarState();
+  }
+
+  function applyBlockFormat(
+    format: "p" | "h2" | "h3" | "blockquote"
+  ) {
+    runCommand("formatBlock", format);
   }
 
   function applyAlignment(
@@ -264,15 +277,7 @@ export default function RichTextEditor({
       return;
     }
 
-    document.execCommand(
-      "createLink",
-      false,
-      trimmedUrl
-    );
-
-    updateContent();
-    rememberSelection();
-    refreshToolbarState();
+    runCommand("createLink", trimmedUrl);
   }
 
   function clearFormatting() {
@@ -341,14 +346,6 @@ export default function RichTextEditor({
         .from("article-images")
         .getPublicUrl(filePath);
 
-      const editor = editorRef.current;
-
-      if (!editor) {
-        throw new Error(
-          "Article editor is unavailable."
-        );
-      }
-
       restoreSelection();
 
       const imageHtml = `
@@ -367,7 +364,6 @@ export default function RichTextEditor({
             "
           />
           <figcaption
-            contenteditable="true"
             style="
               margin-top: 10px;
               font-size: 13px;
@@ -388,18 +384,14 @@ export default function RichTextEditor({
       updateContent();
       rememberSelection();
 
-      setMessage(
-        "Image inserted. You can edit its caption."
-      );
+      setMessage("Image inserted successfully.");
     } catch (error) {
       const detail =
         error instanceof Error
           ? error.message
           : "Unknown upload error";
 
-      setMessage(
-        "Could not upload image: " + detail
-      );
+      setMessage("Could not upload image: " + detail);
     } finally {
       setUploading(false);
 
@@ -407,6 +399,13 @@ export default function RichTextEditor({
         fileInputRef.current.value = "";
       }
     }
+  }
+
+  function handleToolbarPointerDown(
+    event: React.PointerEvent<HTMLButtonElement>
+  ) {
+    rememberSelection();
+    event.preventDefault();
   }
 
   function tool(
@@ -425,15 +424,17 @@ export default function RichTextEditor({
         style={{
           ...buttonStyle,
           ...extraStyle,
-          ...activeStyle(command),
+          ...(activeFormats[command]
+            ? {
+                background: "#dceafa",
+                color: "#174b7e",
+                borderColor: "#4f8fcf",
+                fontWeight: 700,
+              }
+            : {}),
         }}
-        onMouseDown={event => {
-          rememberSelection();
-          event.preventDefault();
-        }}
-        onClick={() => {
-          runCommand(command, argument);
-        }}
+        onPointerDown={handleToolbarPointerDown}
+        onClick={() => runCommand(command, argument)}
       >
         {label}
       </button>
@@ -455,19 +456,17 @@ export default function RichTextEditor({
         aria-pressed={isActive}
         style={{
           ...buttonStyle,
-          ...activeStyle(format),
+          ...(isActive
+            ? {
+                background: "#dceafa",
+                color: "#174b7e",
+                borderColor: "#4f8fcf",
+                fontWeight: 700,
+              }
+            : {}),
         }}
-        onMouseDown={event => {
-          rememberSelection();
-          event.preventDefault();
-        }}
-        onClick={() => {
-          if (format !== "p" && isActive) {
-            runCommand("formatBlock", "p");
-          } else {
-            runCommand("formatBlock", format);
-          }
-        }}
+        onPointerDown={handleToolbarPointerDown}
+        onClick={() => applyBlockFormat(format)}
       >
         {label}
       </button>
@@ -489,12 +488,15 @@ export default function RichTextEditor({
         aria-pressed={Boolean(activeFormats[command])}
         style={{
           ...buttonStyle,
-          ...activeStyle(command),
+          ...(activeFormats[command]
+            ? {
+                background: "#dceafa",
+                color: "#174b7e",
+                borderColor: "#4f8fcf",
+              }
+            : {}),
         }}
-        onMouseDown={event => {
-          rememberSelection();
-          event.preventDefault();
-        }}
+        onPointerDown={handleToolbarPointerDown}
         onClick={() => applyAlignment(alignment)}
       >
         {label}
@@ -531,7 +533,6 @@ export default function RichTextEditor({
         color: "#26364a",
       }}
     >
-      {/* TOP TOOLBAR: Frequently used tools */}
       {showToolbar && (
         <div
           role="toolbar"
@@ -549,8 +550,7 @@ export default function RichTextEditor({
             borderRadius: 10,
             background: "rgba(248, 251, 255, 0.97)",
             backdropFilter: "blur(12px)",
-            boxShadow:
-              "0 4px 16px rgba(25, 55, 90, 0.08)",
+            boxShadow: "0 4px 16px rgba(25, 55, 90, 0.08)",
             marginBottom: 12,
           }}
         >
@@ -579,16 +579,13 @@ export default function RichTextEditor({
 
           <button
             type="button"
-            title="Scroll to additional formatting tools"
             style={{
               ...buttonStyle,
               marginLeft: "auto",
               color: "#24558a",
               fontWeight: 700,
             }}
-            onMouseDown={event =>
-              event.preventDefault()
-            }
+            onPointerDown={event => event.preventDefault()}
             onClick={() => {
               document
                 .getElementById("article-more-tools")
@@ -603,16 +600,11 @@ export default function RichTextEditor({
 
           <button
             type="button"
-            title="Hide toolbar"
             style={{
               ...buttonStyle,
               background: "#edf3fa",
               color: "#24558a",
-              fontWeight: 700,
             }}
-            onMouseDown={event =>
-              event.preventDefault()
-            }
             onClick={() => setShowToolbar(false)}
           >
             Hide
@@ -638,10 +630,7 @@ export default function RichTextEditor({
             background: "#24558a",
             color: "#ffffff",
             fontSize: 22,
-            fontWeight: 700,
             cursor: "pointer",
-            boxShadow:
-              "0 5px 18px rgba(20, 55, 90, 0.25)",
           }}
         >
           ☰
@@ -655,12 +644,8 @@ export default function RichTextEditor({
             margin: "8px 0 12px",
             padding: "9px 12px",
             borderRadius: 7,
-            background: isError
-              ? "#fff1f0"
-              : "#edf7f1",
-            color: isError
-              ? "#b42318"
-              : "#315b46",
+            background: isError ? "#fff1f0" : "#edf7f1",
+            color: isError ? "#b42318" : "#315b46",
             fontSize: 13,
           }}
         >
@@ -668,7 +653,6 @@ export default function RichTextEditor({
         </p>
       )}
 
-      {/* WRITING AREA */}
       <div
         ref={editorRef}
         className="article-rich-content"
@@ -682,7 +666,7 @@ export default function RichTextEditor({
           rememberSelection();
           refreshToolbarState();
         }}
-        onMouseUp={() => {
+        onPointerUp={() => {
           rememberSelection();
           refreshToolbarState();
         }}
@@ -692,9 +676,7 @@ export default function RichTextEditor({
           rememberSelection();
           refreshToolbarState();
         }}
-        onBlur={() => {
-          updateContent();
-        }}
+        onBlur={updateContent}
         style={{
           minHeight: 520,
           width: "100%",
@@ -703,17 +685,10 @@ export default function RichTextEditor({
           border: "1px solid #d8e0eb",
           borderRadius: 10,
           background: "#ffffff",
-          color: "#26364a",
-          fontFamily:
-            "Georgia, 'Times New Roman', serif",
-          fontSize: 16,
-          lineHeight: 1.9,
-          overflowWrap: "anywhere",
           outline: "none",
         }}
       />
 
-      {/* BOTTOM TOOLBAR: Additional tools */}
       {showToolbar && (
         <div
           id="article-more-tools"
@@ -753,33 +728,10 @@ export default function RichTextEditor({
 
           {separator()}
 
-          {alignmentTool(
-            "☰ Left",
-            "Align left",
-            "justifyLeft",
-            "Left"
-          )}
-
-          {alignmentTool(
-            "☷ Center",
-            "Align center",
-            "justifyCenter",
-            "Center"
-          )}
-
-          {alignmentTool(
-            "☰ Right",
-            "Align right",
-            "justifyRight",
-            "Right"
-          )}
-
-          {alignmentTool(
-            "☷ Justify",
-            "Justify text",
-            "justifyFull",
-            "Full"
-          )}
+          {alignmentTool("☰ Left", "Align left", "justifyLeft", "Left")}
+          {alignmentTool("☷ Center", "Align center", "justifyCenter", "Center")}
+          {alignmentTool("☰ Right", "Align right", "justifyRight", "Right")}
+          {alignmentTool("☷ Justify", "Justify text", "justifyFull", "Full")}
 
           {separator()}
 
@@ -793,10 +745,7 @@ export default function RichTextEditor({
           <button
             type="button"
             style={buttonStyle}
-            onMouseDown={event => {
-              rememberSelection();
-              event.preventDefault();
-            }}
+            onPointerDown={handleToolbarPointerDown}
             onClick={insertLink}
           >
             🔗 Link
@@ -808,10 +757,7 @@ export default function RichTextEditor({
           <button
             type="button"
             style={buttonStyle}
-            onMouseDown={event => {
-              rememberSelection();
-              event.preventDefault();
-            }}
+            onPointerDown={handleToolbarPointerDown}
             onClick={clearFormatting}
           >
             Clear Format
@@ -823,17 +769,10 @@ export default function RichTextEditor({
             type="button"
             style={primaryButtonStyle}
             disabled={uploading}
-            onMouseDown={event => {
-              rememberSelection();
-              event.preventDefault();
-            }}
-            onClick={() =>
-              fileInputRef.current?.click()
-            }
+            onPointerDown={handleToolbarPointerDown}
+            onClick={() => fileInputRef.current?.click()}
           >
-            {uploading
-              ? "Uploading..."
-              : "＋ Insert Image"}
+            {uploading ? "Uploading..." : "＋ Insert Image"}
           </button>
 
           <input
@@ -843,16 +782,12 @@ export default function RichTextEditor({
             hidden
             onChange={event => {
               const file = event.target.files?.[0];
-
-              if (file) {
-                void uploadSupportingImage(file);
-              }
+              if (file) void uploadSupportingImage(file);
             }}
           />
         </div>
       )}
 
-      {/* WORD COUNT */}
       <div
         style={{
           display: "flex",
@@ -866,11 +801,7 @@ export default function RichTextEditor({
         }}
       >
         <span>{wordCount} words</span>
-
-        <span>
-          Active tools are highlighted in blue.
-          Click the same tool again to turn it off.
-        </span>
+        <span>Active tools are highlighted in blue.</span>
       </div>
 
       <p
@@ -881,9 +812,8 @@ export default function RichTextEditor({
           lineHeight: 1.6,
         }}
       >
-        Tip: Place your cursor where you want an image
-        to appear. You can edit the caption below
-        each inserted image.
+        Tip: Select your text before applying formatting.
+        Place your cursor where you want an image to appear.
       </p>
     </div>
   );
