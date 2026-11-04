@@ -3081,3 +3081,271 @@ button,
     padding: 22px 18px !important;
   }
 }
+
+/* =====================================
+   EPL MINIMAL RICH TEXT EDITOR
+===================================== */
+
+.epl-editor {
+  width: 100%;
+  min-width: 0;
+  color: #26364a;
+}
+
+/* TOP TOOLBAR */
+
+.epl-topbar {
+  position: sticky;
+  top: 8px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 9px;
+  margin-bottom: 12px;
+  border: 1px solid #dce3ec;
+  border-radius: 9px;
+  background: rgba(255,255,255,.97);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 3px 12px rgba(20,45,75,.06);
+}
+
+.epl-tool-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* WORKSPACE */
+
+.epl-workspace {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  gap: 10px;
+  align-items: start;
+  width: 100%;
+}
+
+/* SIDE TOOLBARS */
+
+.epl-side-tools {
+  position: sticky;
+  top: 75px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 3px;
+  border: 1px solid #e0e6ee;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+/* BUTTONS */
+
+.epl-editor .epl-icon-button,
+.epl-editor .epl-tool-group button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #34465c;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.epl-editor .epl-icon-button:hover,
+.epl-editor .epl-tool-group button:hover {
+  background: #eaf1f9;
+  border-color: #d4e1f0;
+}
+
+.epl-editor button[aria-pressed="true"] {
+  background: #dceafa !important;
+  color: #174b7e !important;
+  border-color: #8bb5df !important;
+}
+
+.epl-editor button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+/* MAIN WRITING AREA */
+
+.epl-writing-area {
+  width: 100%;
+  min-width: 0;
+}
+
+.epl-writing-field {
+  display: block;
+  width: 100%;
+  min-height: 680px;
+  box-sizing: border-box;
+  padding: 36px 42px;
+  border: 1px solid #dce3ec;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #26364a;
+  outline: none;
+  line-height: 1.8;
+  font-size: 16px;
+}
+
+.epl-writing-field:focus {
+  border-color: #9bb8d7;
+  box-shadow: 0 0 0 2px rgba(36,85,138,.06);
+}
+
+/* WORD COUNT */
+
+.epl-word-count {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 3px;
+  color: #8793a3;
+  font-size: 11px;
+}
+
+/* BOTTOM TOOLBAR */
+
+.epl-bottom-tools {
+  position: sticky;
+  bottom: 8px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 9px;
+  margin-top: 10px;
+  border: 1px solid #dce3ec;
+  border-radius: 9px;
+  background: rgba(255,255,255,.97);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 -3px 12px rgba(20,45,75,.05);
+}
+
+.epl-bottom-hint {
+  margin-left: auto;
+  color: #8793a3;
+  font-size: 11px;
+}
+
+.epl-editor-tip {
+  color: #8793a3;
+  font-size: 11px;
+  margin-top: 5px;
+}
+
+/* SHOW TOOLBAR */
+
+.epl-show-tools {
+  position: sticky;
+  top: 8px;
+  z-index: 110;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #dce3ec;
+  border-radius: 7px;
+  background: white;
+  color: #24558a;
+  cursor: pointer;
+}
+
+/* STATUS MESSAGE */
+
+.epl-message {
+  padding: 9px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.epl-message.error {
+  background: #fff1f0;
+  color: #b42318;
+}
+
+.epl-message.success {
+  background: #edf7f1;
+  color: #315b46;
+}
+
+/* MOBILE RESPONSIVE */
+
+@media (max-width: 700px) {
+
+  .epl-topbar {
+    top: 4px;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 6px;
+  }
+
+  .epl-tool-group {
+    gap: 3px;
+  }
+
+  .epl-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .epl-side-tools {
+    position: sticky;
+    top: 53px;
+    z-index: 80;
+    flex-direction: row;
+    justify-content: flex-start;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 5px;
+    scrollbar-width: none;
+  }
+
+  .epl-side-tools::-webkit-scrollbar {
+    display: none;
+  }
+
+  .epl-writing-area {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .epl-writing-field {
+    width: 100%;
+    min-height: 600px;
+    padding: 22px 17px;
+    font-size: 15px;
+  }
+
+  .epl-bottom-tools {
+    bottom: 4px;
+    padding: 5px;
+  }
+
+  .epl-bottom-hint {
+    font-size: 10px;
+  }
+
+  .epl-word-count {
+    font-size: 10px;
+  }
+}
+
