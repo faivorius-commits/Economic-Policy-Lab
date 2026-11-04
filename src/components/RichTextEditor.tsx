@@ -154,7 +154,6 @@ export default function RichTextEditor({
       }
     });
 
-    // Detect the current block format.
     try {
       const block = document
         .queryCommandValue("formatBlock")
@@ -208,7 +207,7 @@ export default function RichTextEditor({
     };
   }, []);
 
-  // FIX: Apply formatBlock with angle brackets for browser compatibility.
+  // Improved heading formatting compatibility.
   function runCommand(
     command: string,
     argument?: string
@@ -532,10 +531,11 @@ export default function RichTextEditor({
         color: "#26364a",
       }}
     >
+      {/* TOP TOOLBAR: Frequently used tools */}
       {showToolbar && (
         <div
           role="toolbar"
-          aria-label="Article formatting tools"
+          aria-label="Main article formatting tools"
           style={{
             position: "sticky",
             top: 8,
@@ -562,7 +562,6 @@ export default function RichTextEditor({
           {blockTool("Paragraph", "p")}
           {blockTool("H2", "h2")}
           {blockTool("H3", "h3")}
-          {blockTool("Quote", "blockquote")}
 
           {separator()}
 
@@ -577,6 +576,173 @@ export default function RichTextEditor({
           {tool("U Underline", "underline", undefined, {
             textDecoration: "underline",
           })}
+
+          <button
+            type="button"
+            title="Scroll to additional formatting tools"
+            style={{
+              ...buttonStyle,
+              marginLeft: "auto",
+              color: "#24558a",
+              fontWeight: 700,
+            }}
+            onMouseDown={event =>
+              event.preventDefault()
+            }
+            onClick={() => {
+              document
+                .getElementById("article-more-tools")
+                ?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "center",
+                });
+            }}
+          >
+            More tools ↓
+          </button>
+
+          <button
+            type="button"
+            title="Hide toolbar"
+            style={{
+              ...buttonStyle,
+              background: "#edf3fa",
+              color: "#24558a",
+              fontWeight: 700,
+            }}
+            onMouseDown={event =>
+              event.preventDefault()
+            }
+            onClick={() => setShowToolbar(false)}
+          >
+            Hide
+          </button>
+        </div>
+      )}
+
+      {!showToolbar && (
+        <button
+          type="button"
+          title="Show formatting tools"
+          aria-label="Show formatting tools"
+          onClick={() => setShowToolbar(true)}
+          style={{
+            position: "fixed",
+            right: 22,
+            bottom: 24,
+            zIndex: 100,
+            width: 52,
+            height: 52,
+            borderRadius: "50%",
+            border: "none",
+            background: "#24558a",
+            color: "#ffffff",
+            fontSize: 22,
+            fontWeight: 700,
+            cursor: "pointer",
+            boxShadow:
+              "0 5px 18px rgba(20, 55, 90, 0.25)",
+          }}
+        >
+          ☰
+        </button>
+      )}
+
+      {message && (
+        <p
+          role="status"
+          style={{
+            margin: "8px 0 12px",
+            padding: "9px 12px",
+            borderRadius: 7,
+            background: isError
+              ? "#fff1f0"
+              : "#edf7f1",
+            color: isError
+              ? "#b42318"
+              : "#315b46",
+            fontSize: 13,
+          }}
+        >
+          {message}
+        </p>
+      )}
+
+      {/* WRITING AREA */}
+      <div
+        ref={editorRef}
+        className="article-rich-content"
+        contentEditable
+        suppressContentEditableWarning
+        role="textbox"
+        aria-label={label}
+        aria-multiline="true"
+        data-placeholder="Start writing your article here..."
+        onKeyUp={() => {
+          rememberSelection();
+          refreshToolbarState();
+        }}
+        onMouseUp={() => {
+          rememberSelection();
+          refreshToolbarState();
+        }}
+        onFocus={refreshToolbarState}
+        onInput={() => {
+          updateContent();
+          rememberSelection();
+          refreshToolbarState();
+        }}
+        onBlur={() => {
+          updateContent();
+        }}
+        style={{
+          minHeight: 520,
+          width: "100%",
+          boxSizing: "border-box",
+          padding: "28px 30px",
+          border: "1px solid #d8e0eb",
+          borderRadius: 10,
+          background: "#ffffff",
+          color: "#26364a",
+          fontFamily:
+            "Georgia, 'Times New Roman', serif",
+          fontSize: 16,
+          lineHeight: 1.9,
+          overflowWrap: "anywhere",
+          outline: "none",
+        }}
+      />
+
+      {/* BOTTOM TOOLBAR: Additional tools */}
+      {showToolbar && (
+        <div
+          id="article-more-tools"
+          role="toolbar"
+          aria-label="Additional article formatting tools"
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 6,
+            padding: 12,
+            marginTop: 12,
+            border: "1px solid #d8e0eb",
+            borderRadius: 10,
+            background: "#f8fbff",
+          }}
+        >
+          <strong
+            style={{
+              width: "100%",
+              fontSize: 12,
+              color: "#52647a",
+              marginBottom: 2,
+            }}
+          >
+            MORE FORMATTING TOOLS
+          </strong>
+
+          {blockTool("Quote", "blockquote")}
 
           {tool("S Strike", "strikeThrough", undefined, {
             textDecoration: "line-through",
@@ -683,120 +849,10 @@ export default function RichTextEditor({
               }
             }}
           />
-
-          {separator()}
-
-          <button
-            type="button"
-            title="Hide Toolbar"
-            style={{
-              ...buttonStyle,
-              background: "#edf3fa",
-              color: "#24558a",
-              fontWeight: 700,
-            }}
-            onMouseDown={event =>
-              event.preventDefault()
-            }
-            onClick={() => setShowToolbar(false)}
-          >
-            ⌃ Hide Toolbar
-          </button>
         </div>
       )}
 
-      {!showToolbar && (
-        <button
-          type="button"
-          title="Show Toolbar"
-          aria-label="Show Toolbar"
-          onClick={() => setShowToolbar(true)}
-          style={{
-            position: "fixed",
-            right: 22,
-            bottom: 24,
-            zIndex: 100,
-            width: 52,
-            height: 52,
-            borderRadius: "50%",
-            border: "none",
-            background: "#24558a",
-            color: "#ffffff",
-            fontSize: 22,
-            fontWeight: 700,
-            cursor: "pointer",
-            boxShadow:
-              "0 5px 18px rgba(20, 55, 90, 0.25)",
-          }}
-        >
-          ☰
-        </button>
-      )}
-
-      {message && (
-        <p
-          role="status"
-          style={{
-            margin: "8px 0 12px",
-            padding: "9px 12px",
-            borderRadius: 7,
-            background: isError
-              ? "#fff1f0"
-              : "#edf7f1",
-            color: isError
-              ? "#b42318"
-              : "#315b46",
-            fontSize: 13,
-          }}
-        >
-          {message}
-        </p>
-      )}
-
-      <div
-        ref={editorRef}
-        className="article-rich-content"
-        contentEditable
-        suppressContentEditableWarning
-        role="textbox"
-        aria-label={label}
-        aria-multiline="true"
-        data-placeholder="Start writing your article here..."
-        onKeyUp={() => {
-          rememberSelection();
-          refreshToolbarState();
-        }}
-        onMouseUp={() => {
-          rememberSelection();
-          refreshToolbarState();
-        }}
-        onFocus={refreshToolbarState}
-        onInput={() => {
-          updateContent();
-          rememberSelection();
-          refreshToolbarState();
-        }}
-        onBlur={() => {
-          updateContent();
-        }}
-        style={{
-          minHeight: 520,
-          width: "100%",
-          boxSizing: "border-box",
-          padding: "28px 30px",
-          border: "1px solid #d8e0eb",
-          borderRadius: 10,
-          background: "#ffffff",
-          color: "#26364a",
-          fontFamily:
-            "Georgia, 'Times New Roman', serif",
-          fontSize: 16,
-          lineHeight: 1.9,
-          overflowWrap: "anywhere",
-          outline: "none",
-        }}
-      />
-
+      {/* WORD COUNT */}
       <div
         style={{
           display: "flex",
