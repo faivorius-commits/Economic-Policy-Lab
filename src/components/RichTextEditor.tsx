@@ -1,5 +1,10 @@
-
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent,
+} from "react";
 import { supabase } from "../lib/supabase";
 
 type RichTextEditorProps = {
@@ -8,25 +13,53 @@ type RichTextEditorProps = {
   label?: string;
 };
 
-const buttonStyle: React.CSSProperties = {
-  border: "1px solid #d5dce7",
+const blue = "#24558a";
+
+const baseButton: CSSProperties = {
+  width: 36,
+  height: 36,
+  minWidth: 36,
+  padding: 0,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  border: "1px solid #dce3ec",
   borderRadius: 7,
   background: "#ffffff",
-  color: "#26364a",
-  padding: "8px 11px",
-  fontSize: 13,
-  fontWeight: 500,
+  color: "#33465d",
+  fontSize: 14,
+  fontWeight: 600,
   cursor: "pointer",
-  whiteSpace: "nowrap",
-  minHeight: 38,
   touchAction: "manipulation",
 };
 
-const primaryButtonStyle: React.CSSProperties = {
-  ...buttonStyle,
-  background: "#24558a",
-  color: "#ffffff",
-  borderColor: "#24558a",
+const activeButton: CSSProperties = {
+  background: "#e5effb",
+  borderColor: "#78a6d5",
+  color: blue,
+};
+
+const topButton: CSSProperties = {
+  ...baseButton,
+  width: "auto",
+  padding: "0 10px",
+  fontSize: 12,
+};
+
+const sideStyle: CSSProperties = {
+  position: "sticky",
+  top: 75,
+  alignSelf: "start",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: 7,
+  padding: "9px 5px",
+  border: "1px solid #e0e6ee",
+  borderRadius: 10,
+  background: "rgba(248, 251, 255, 0.97)",
+  boxShadow: "0 3px 12px rgba(25, 55, 90, 0.05)",
+  zIndex: 10,
 };
 
 export default function RichTextEditor({
@@ -38,14 +71,14 @@ export default function RichTextEditor({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const savedRange = useRef<Range | null>(null);
 
+  const [wordCount, setWordCount] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
-  const [wordCount, setWordCount] = useState(0);
-  const [showToolbar, setShowToolbar] = useState(true);
   const [activeFormats, setActiveFormats] = useState<
     Record<string, boolean>
   >({});
 
+  // Sync content from parent
   useEffect(() => {
     const editor = editorRef.current;
 
@@ -55,6 +88,7 @@ export default function RichTextEditor({
 
     const temp = document.createElement("div");
     temp.innerHTML = value || "";
+
     const text = temp.textContent || "";
 
     setWordCount(
@@ -62,19 +96,21 @@ export default function RichTextEditor({
     );
   }, [value]);
 
+  // Update editor content
   function updateContent() {
     const editor = editorRef.current;
     if (!editor) return;
 
-    const html = editor.innerHTML;
-    onChange(html);
+    onChange(editor.innerHTML);
 
     const text = editor.innerText || "";
+
     setWordCount(
       text.trim() ? text.trim().split(/\s+/).length : 0
     );
   }
 
+  // Remember text selection
   function rememberSelection() {
     const editor = editorRef.current;
     const selection = window.getSelection();
@@ -94,6 +130,7 @@ export default function RichTextEditor({
     }
   }
 
+  // Restore text selection
   function restoreSelection() {
     const editor = editorRef.current;
     const selection = window.getSelection();
@@ -116,6 +153,7 @@ export default function RichTextEditor({
 
       selection.removeAllRanges();
       selection.addRange(savedRange.current);
+
       return true;
     } catch {
       savedRange.current = null;
@@ -123,6 +161,7 @@ export default function RichTextEditor({
     }
   }
 
+  // Detect active formatting
   function refreshToolbarState() {
     const editor = editorRef.current;
     const selection = window.getSelection();
@@ -142,8 +181,6 @@ export default function RichTextEditor({
       "italic",
       "underline",
       "strikeThrough",
-      "superscript",
-      "subscript",
       "insertUnorderedList",
       "insertOrderedList",
       "justifyLeft",
@@ -154,7 +191,7 @@ export default function RichTextEditor({
 
     const formats: Record<string, boolean> = {};
 
-    commands.forEach(command => {
+    commands.forEach((command) => {
       try {
         formats[command] = document.queryCommandState(command);
       } catch {
@@ -165,14 +202,14 @@ export default function RichTextEditor({
     const node =
       range.startContainer.nodeType === Node.TEXT_NODE
         ? range.startContainer.parentElement
-        : range.startContainer as HTMLElement;
+        : (range.startContainer as HTMLElement);
 
     const block = node?.closest(
       "p, div, h2, h3, blockquote"
     );
 
-    formats.p = block?.tagName === "P" ||
-      block?.tagName === "DIV";
+    formats.p =
+      block?.tagName === "P" || block?.tagName === "DIV";
     formats.h2 = block?.tagName === "H2";
     formats.h3 = block?.tagName === "H3";
     formats.blockquote = block?.tagName === "BLOCKQUOTE";
@@ -196,8 +233,9 @@ export default function RichTextEditor({
         handleSelectionChange
       );
     };
-  });
+  }, []);
 
+  // Execute formatting commands
   function runCommand(
     command: string,
     argument?: string
@@ -214,7 +252,7 @@ export default function RichTextEditor({
         "false"
       );
     } catch {
-      // Continue with the formatting command.
+      // Continue
     }
 
     const commandArgument =
@@ -237,7 +275,7 @@ export default function RichTextEditor({
     refreshToolbarState();
   }
 
-  function applyBlockFormat(
+  function applyBlock(
     format: "p" | "h2" | "h3" | "blockquote"
   ) {
     runCommand("formatBlock", format);
@@ -256,30 +294,93 @@ export default function RichTextEditor({
     runCommand(commands[alignment]);
   }
 
+  function handleToolbarPointerDown(
+    event: PointerEvent<HTMLButtonElement>
+  ) {
+    rememberSelection();
+    event.preventDefault();
+  }
+
+  // Reusable small toolbar button
+  function tool(
+    title: string,
+    command: string,
+    symbol: string,
+    style?: CSSProperties
+  ) {
+    const active = Boolean(activeFormats[command]);
+
+    return (
+      <button
+        key={command}
+        type="button"
+        title={title}
+        aria-label={title}
+        aria-pressed={active}
+        style={{
+          ...baseButton,
+          ...style,
+          ...(active ? activeButton : {}),
+        }}
+        onPointerDown={handleToolbarPointerDown}
+        onClick={() => runCommand(command)}
+      >
+        {symbol}
+      </button>
+    );
+  }
+
+  function blockTool(
+    title: string,
+    format: "p" | "h2" | "h3"
+  ) {
+    const active = Boolean(activeFormats[format]);
+
+    return (
+      <button
+        key={format}
+        type="button"
+        title={title}
+        aria-label={title}
+        aria-pressed={active}
+        style={{
+          ...topButton,
+          ...(active ? activeButton : {}),
+        }}
+        onPointerDown={handleToolbarPointerDown}
+        onClick={() => applyBlock(format)}
+      >
+        {format === "p" ? "P" : format.toUpperCase()}
+      </button>
+    );
+  }
+
+  // Insert hyperlink
   function insertLink() {
     restoreSelection();
 
     const url = window.prompt(
-      "Enter the website URL:",
+      "Enter website URL:",
       "https://"
     );
 
     if (!url) return;
 
-    const trimmedUrl = url.trim();
+    const trimmed = url.trim();
 
     if (
-      !trimmedUrl.startsWith("https://") &&
-      !trimmedUrl.startsWith("http://") &&
-      !trimmedUrl.startsWith("mailto:")
+      !trimmed.startsWith("https://") &&
+      !trimmed.startsWith("http://") &&
+      !trimmed.startsWith("mailto:")
     ) {
       setMessage("Please enter a valid URL.");
       return;
     }
 
-    runCommand("createLink", trimmedUrl);
+    runCommand("createLink", trimmed);
   }
 
+  // Remove formatting
   function clearFormatting() {
     restoreSelection();
 
@@ -291,6 +392,7 @@ export default function RichTextEditor({
     refreshToolbarState();
   }
 
+  // Upload supporting image to Supabase
   async function uploadSupportingImage(file: File) {
     const allowedTypes = [
       "image/jpeg",
@@ -300,7 +402,7 @@ export default function RichTextEditor({
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      setMessage("Use a JPG, PNG, WEBP, or GIF image.");
+      setMessage("Use JPG, PNG, WEBP, or GIF images.");
       return;
     }
 
@@ -348,38 +450,46 @@ export default function RichTextEditor({
 
       restoreSelection();
 
-      const imageHtml = `
-        <figure style="margin: 28px 0; text-align: center;">
-          <img
-            src="${data.publicUrl}"
-            alt="Supporting article image"
-            loading="lazy"
-            style="
-              display: block;
-              width: 100%;
-              max-width: 760px;
-              height: auto;
-              margin: 0 auto;
-              border-radius: 8px;
-            "
-          />
-          <figcaption
-            style="
-              margin-top: 10px;
-              font-size: 13px;
-              color: #687386;
-              text-align: center;
-            "
-          >Write an image caption or source here.</figcaption>
-        </figure>
-        <p><br></p>
-      `;
+      const figure = document.createElement("figure");
+      figure.style.cssText =
+        "margin:28px 0;text-align:center;";
 
-      document.execCommand(
-        "insertHTML",
-        false,
-        imageHtml
-      );
+      const image = document.createElement("img");
+      image.src = data.publicUrl;
+      image.alt = "Supporting article image";
+      image.loading = "lazy";
+      image.style.cssText =
+        "display:block;width:100%;max-width:760px;height:auto;margin:0 auto;border-radius:8px;";
+
+      const caption = document.createElement("figcaption");
+      caption.textContent =
+        "Write an image caption or source here.";
+      caption.style.cssText =
+        "margin-top:10px;font-size:13px;color:#687386;text-align:center;";
+
+      figure.appendChild(image);
+      figure.appendChild(caption);
+
+      const paragraph = document.createElement("p");
+      paragraph.appendChild(document.createElement("br"));
+
+      const selection = window.getSelection();
+
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(figure);
+        figure.after(paragraph);
+
+        range.setStartAfter(paragraph);
+        range.collapse(true);
+
+        selection.removeAllRanges();
+        selection.addRange(range);
+      } else {
+        editorRef.current?.appendChild(figure);
+        editorRef.current?.appendChild(paragraph);
+      }
 
       updateContent();
       rememberSelection();
@@ -401,124 +511,6 @@ export default function RichTextEditor({
     }
   }
 
-  function handleToolbarPointerDown(
-    event: React.PointerEvent<HTMLButtonElement>
-  ) {
-    rememberSelection();
-    event.preventDefault();
-  }
-
-  function tool(
-    label: string,
-    command: string,
-    argument?: string,
-    extraStyle?: React.CSSProperties
-  ) {
-    return (
-      <button
-        key={label}
-        type="button"
-        title={label}
-        aria-label={label}
-        aria-pressed={Boolean(activeFormats[command])}
-        style={{
-          ...buttonStyle,
-          ...extraStyle,
-          ...(activeFormats[command]
-            ? {
-                background: "#dceafa",
-                color: "#174b7e",
-                borderColor: "#4f8fcf",
-                fontWeight: 700,
-              }
-            : {}),
-        }}
-        onPointerDown={handleToolbarPointerDown}
-        onClick={() => runCommand(command, argument)}
-      >
-        {label}
-      </button>
-    );
-  }
-
-  function blockTool(
-    label: string,
-    format: "p" | "h2" | "h3" | "blockquote"
-  ) {
-    const isActive = Boolean(activeFormats[format]);
-
-    return (
-      <button
-        key={format}
-        type="button"
-        title={label}
-        aria-label={label}
-        aria-pressed={isActive}
-        style={{
-          ...buttonStyle,
-          ...(isActive
-            ? {
-                background: "#dceafa",
-                color: "#174b7e",
-                borderColor: "#4f8fcf",
-                fontWeight: 700,
-              }
-            : {}),
-        }}
-        onPointerDown={handleToolbarPointerDown}
-        onClick={() => applyBlockFormat(format)}
-      >
-        {label}
-      </button>
-    );
-  }
-
-  function alignmentTool(
-    label: string,
-    title: string,
-    command: string,
-    alignment: "Left" | "Center" | "Right" | "Full"
-  ) {
-    return (
-      <button
-        key={command}
-        type="button"
-        title={title}
-        aria-label={title}
-        aria-pressed={Boolean(activeFormats[command])}
-        style={{
-          ...buttonStyle,
-          ...(activeFormats[command]
-            ? {
-                background: "#dceafa",
-                color: "#174b7e",
-                borderColor: "#4f8fcf",
-              }
-            : {}),
-        }}
-        onPointerDown={handleToolbarPointerDown}
-        onClick={() => applyAlignment(alignment)}
-      >
-        {label}
-      </button>
-    );
-  }
-
-  function separator() {
-    return (
-      <span
-        aria-hidden="true"
-        style={{
-          width: 1,
-          height: 25,
-          background: "#d9e0e9",
-          margin: "4px 3px",
-          flexShrink: 0,
-        }}
-      />
-    );
-  }
-
   const isError =
     message.startsWith("Could not") ||
     message.startsWith("Please") ||
@@ -527,252 +519,204 @@ export default function RichTextEditor({
 
   return (
     <div
-      className="rich-text-editor"
+      className="epl-rich-editor"
       style={{
         width: "100%",
         color: "#26364a",
+        boxSizing: "border-box",
       }}
     >
-      {showToolbar && (
-        <div
-          role="toolbar"
-          aria-label="Main article formatting tools"
-          style={{
-            position: "sticky",
-            top: 8,
-            zIndex: 30,
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: 6,
-            padding: 10,
-            border: "1px solid #d8e0eb",
-            borderRadius: 10,
-            background: "rgba(248, 251, 255, 0.97)",
-            backdropFilter: "blur(12px)",
-            boxShadow: "0 4px 16px rgba(25, 55, 90, 0.08)",
-            marginBottom: 12,
-          }}
-        >
-          {tool("↶ Undo", "undo")}
-          {tool("↷ Redo", "redo")}
-
-          {separator()}
-
-          {blockTool("Paragraph", "p")}
-          {blockTool("H2", "h2")}
-          {blockTool("H3", "h3")}
-
-          {separator()}
-
-          {tool("B Bold", "bold", undefined, {
-            fontWeight: 800,
-          })}
-
-          {tool("I Italic", "italic", undefined, {
-            fontStyle: "italic",
-          })}
-
-          {tool("U Underline", "underline", undefined, {
-            textDecoration: "underline",
-          })}
-
-          <button
-            type="button"
-            style={{
-              ...buttonStyle,
-              marginLeft: "auto",
-              color: "#24558a",
-              fontWeight: 700,
-            }}
-            onPointerDown={event => event.preventDefault()}
-            onClick={() => {
-              document
-                .getElementById("article-more-tools")
-                ?.scrollIntoView({
-                  behavior: "smooth",
-                  block: "center",
-                });
-            }}
-          >
-            More tools ↓
-          </button>
-
-          <button
-            type="button"
-            style={{
-              ...buttonStyle,
-              background: "#edf3fa",
-              color: "#24558a",
-            }}
-            onClick={() => setShowToolbar(false)}
-          >
-            Hide
-          </button>
-        </div>
-      )}
-
-      {!showToolbar && (
+      {/* TOP TOOLBAR */}
+      <div
+        role="toolbar"
+        aria-label="Main formatting tools"
+        style={{
+          position: "sticky",
+          top: 6,
+          zIndex: 30,
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: 6,
+          padding: "8px 10px",
+          marginBottom: 12,
+          border: "1px solid #dce3ec",
+          borderRadius: 10,
+          background: "rgba(248, 251, 255, 0.97)",
+          backdropFilter: "blur(12px)",
+          boxShadow: "0 3px 12px rgba(25, 55, 90, 0.06)",
+        }}
+      >
         <button
           type="button"
-          title="Show formatting tools"
-          aria-label="Show formatting tools"
-          onClick={() => setShowToolbar(true)}
-          style={{
-            position: "fixed",
-            right: 22,
-            bottom: 24,
-            zIndex: 100,
-            width: 52,
-            height: 52,
-            borderRadius: "50%",
-            border: "none",
-            background: "#24558a",
-            color: "#ffffff",
-            fontSize: 22,
-            cursor: "pointer",
-          }}
+          title="Undo"
+          aria-label="Undo"
+          style={baseButton}
+          onPointerDown={handleToolbarPointerDown}
+          onClick={() => runCommand("undo")}
         >
-          ☰
+          ↶
         </button>
-      )}
 
+        <button
+          type="button"
+          title="Redo"
+          aria-label="Redo"
+          style={baseButton}
+          onPointerDown={handleToolbarPointerDown}
+          onClick={() => runCommand("redo")}
+        >
+          ↷
+        </button>
+
+        <span style={separatorStyle} />
+
+        {blockTool("Paragraph", "p")}
+        {blockTool("Heading 2", "h2")}
+        {blockTool("Heading 3", "h3")}
+
+        <span style={separatorStyle} />
+
+        {tool("Bold", "bold", "B", { fontWeight: 900 })}
+        {tool("Italic", "italic", "I", { fontStyle: "italic" })}
+        {tool("Underline", "underline", "U", {
+          textDecoration: "underline",
+        })}
+      </div>
+
+      {/* MESSAGE */}
       {message && (
-        <p
+        <div
           role="status"
           style={{
-            margin: "8px 0 12px",
+            marginBottom: 10,
             padding: "9px 12px",
             borderRadius: 7,
             background: isError ? "#fff1f0" : "#edf7f1",
             color: isError ? "#b42318" : "#315b46",
-            fontSize: 13,
+            fontSize: 12,
           }}
         >
           {message}
-        </p>
+        </div>
       )}
 
+      {/* MAIN EDITOR WORKSPACE */}
       <div
-        ref={editorRef}
-        className="article-rich-content"
-        contentEditable
-        suppressContentEditableWarning
-        role="textbox"
-        aria-label={label}
-        aria-multiline="true"
-        data-placeholder="Start writing your article here..."
-        onKeyUp={() => {
-          rememberSelection();
-          refreshToolbarState();
-        }}
-        onPointerUp={() => {
-          rememberSelection();
-          refreshToolbarState();
-        }}
-        onFocus={refreshToolbarState}
-        onInput={() => {
-          updateContent();
-          rememberSelection();
-          refreshToolbarState();
-        }}
-        onBlur={updateContent}
+        className="epl-editor-workspace"
         style={{
-          minHeight: 520,
+          display: "grid",
+          gridTemplateColumns: "48px minmax(0, 1fr) 48px",
+          gap: 10,
+          alignItems: "start",
           width: "100%",
-          boxSizing: "border-box",
-          padding: "28px 30px",
-          border: "1px solid #d8e0eb",
-          borderRadius: 10,
-          background: "#ffffff",
-          outline: "none",
         }}
-      />
-
-      {showToolbar && (
-        <div
-          id="article-more-tools"
+      >
+        {/* LEFT TOOLBAR */}
+        <aside
           role="toolbar"
-          aria-label="Additional article formatting tools"
+          aria-label="Alignment and list tools"
+          style={sideStyle}
+        >
+          {tool("Align left", "justifyLeft", "☰")}
+          {tool("Align center", "justifyCenter", "≡")}
+          {tool("Align right", "justifyRight", "☷")}
+          {tool("Justify", "justifyFull", "▤")}
+
+          <span style={separatorStyle} />
+
+          {tool("Bullet list", "insertUnorderedList", "•")}
+          {tool("Numbered list", "insertOrderedList", "1.")}
+
+          <span style={separatorStyle} />
+
+          {tool("Indent", "indent", "→")}
+          {tool("Outdent", "outdent", "←")}
+        </aside>
+
+        {/* WIDE WRITING AREA */}
+        <main
+          className="epl-writing-column"
           style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: 6,
-            padding: 12,
-            marginTop: 12,
-            border: "1px solid #d8e0eb",
-            borderRadius: 10,
-            background: "#f8fbff",
+            minWidth: 0,
+            width: "100%",
           }}
         >
-          <strong
+          <div
+            ref={editorRef}
+            className="article-rich-content epl-writing-field"
+            contentEditable
+            suppressContentEditableWarning
+            role="textbox"
+            aria-label={label}
+            aria-multiline="true"
+            data-placeholder="Start writing your article here..."
+            onKeyUp={() => {
+              rememberSelection();
+              refreshToolbarState();
+            }}
+            onPointerUp={() => {
+              rememberSelection();
+              refreshToolbarState();
+            }}
+            onFocus={refreshToolbarState}
+            onInput={() => {
+              updateContent();
+              rememberSelection();
+              refreshToolbarState();
+            }}
+            onBlur={() => {
+              updateContent();
+              rememberSelection();
+            }}
             style={{
               width: "100%",
-              fontSize: 12,
-              color: "#52647a",
-              marginBottom: 2,
+              minHeight: 650,
+              boxSizing: "border-box",
+              padding: "38px 42px",
+              border: "1px solid #dce3ec",
+              borderRadius: 10,
+              background: "#ffffff",
+              outline: "none",
+              fontSize: 16,
+              lineHeight: 1.85,
+              color: "#26364a",
+              overflowWrap: "break-word",
             }}
-          >
-            MORE FORMATTING TOOLS
-          </strong>
+          />
+        </main>
 
-          {blockTool("Quote", "blockquote")}
-
-          {tool("S Strike", "strikeThrough", undefined, {
-            textDecoration: "line-through",
-          })}
-
-          {tool("x²", "superscript")}
-          {tool("x₂", "subscript")}
-
-          {separator()}
-
-          {alignmentTool("☰ Left", "Align left", "justifyLeft", "Left")}
-          {alignmentTool("☷ Center", "Align center", "justifyCenter", "Center")}
-          {alignmentTool("☰ Right", "Align right", "justifyRight", "Right")}
-          {alignmentTool("☷ Justify", "Justify text", "justifyFull", "Full")}
-
-          {separator()}
-
-          {tool("• Bullets", "insertUnorderedList")}
-          {tool("1. Numbered", "insertOrderedList")}
-          {tool("→ Indent", "indent")}
-          {tool("← Outdent", "outdent")}
-
-          {separator()}
-
+        {/* RIGHT TOOLBAR */}
+        <aside
+          role="toolbar"
+          aria-label="Insert and editing tools"
+          style={sideStyle}
+        >
           <button
             type="button"
-            style={buttonStyle}
+            title="Insert link"
+            aria-label="Insert link"
+            style={baseButton}
             onPointerDown={handleToolbarPointerDown}
             onClick={insertLink}
           >
-            🔗 Link
+            ↗
           </button>
-
-          {tool("Unlink", "unlink")}
-          {tool("— Divider", "insertHorizontalRule")}
 
           <button
             type="button"
-            style={buttonStyle}
-            onPointerDown={handleToolbarPointerDown}
-            onClick={clearFormatting}
-          >
-            Clear Format
-          </button>
-
-          {separator()}
-
-          <button
-            type="button"
-            style={primaryButtonStyle}
+            title="Insert image"
+            aria-label="Insert image"
             disabled={uploading}
+            style={{
+              ...baseButton,
+              color: blue,
+              opacity: uploading ? 0.5 : 1,
+            }}
             onPointerDown={handleToolbarPointerDown}
             onClick={() => fileInputRef.current?.click()}
           >
-            {uploading ? "Uploading..." : "＋ Insert Image"}
+            {uploading ? "…" : "▧"}
           </button>
 
           <input
@@ -780,41 +724,98 @@ export default function RichTextEditor({
             type="file"
             accept="image/jpeg,image/png,image/webp,image/gif"
             hidden
-            onChange={event => {
+            onChange={(event) => {
               const file = event.target.files?.[0];
-              if (file) void uploadSupportingImage(file);
+
+              if (file) {
+                void uploadSupportingImage(file);
+              }
             }}
           />
-        </div>
-      )}
 
+          <span style={separatorStyle} />
+
+          <button
+            type="button"
+            title="Blockquote"
+            aria-label="Blockquote"
+            aria-pressed={Boolean(activeFormats.blockquote)}
+            style={{
+              ...baseButton,
+              ...(activeFormats.blockquote ? activeButton : {}),
+            }}
+            onPointerDown={handleToolbarPointerDown}
+            onClick={() => applyBlock("blockquote")}
+          >
+            ❞
+          </button>
+
+          {tool("Strikethrough", "strikeThrough", "S", {
+            textDecoration: "line-through",
+          })}
+
+          <span style={separatorStyle} />
+
+          <button
+            type="button"
+            title="Horizontal divider"
+            aria-label="Horizontal divider"
+            style={baseButton}
+            onPointerDown={handleToolbarPointerDown}
+            onClick={() => runCommand("insertHorizontalRule")}
+          >
+            —
+          </button>
+
+          <button
+            type="button"
+            title="Remove formatting"
+            aria-label="Remove formatting"
+            style={{
+              ...baseButton,
+              color: "#b54747",
+            }}
+            onPointerDown={handleToolbarPointerDown}
+            onClick={clearFormatting}
+          >
+            Tx
+          </button>
+        </aside>
+      </div>
+
+      {/* BOTTOM STATUS BAR */}
       <div
         style={{
+          position: "sticky",
+          bottom: 0,
+          zIndex: 15,
           display: "flex",
-          flexWrap: "wrap",
           justifyContent: "space-between",
           alignItems: "center",
           gap: 10,
-          padding: "12px 3px",
+          flexWrap: "wrap",
+          padding: "11px 14px",
+          marginTop: 12,
+          border: "1px solid #e0e6ee",
+          borderRadius: 8,
+          background: "rgba(248, 251, 255, 0.97)",
           color: "#718096",
           fontSize: 12,
         }}
       >
         <span>{wordCount} words</span>
-        <span>Active tools are highlighted in blue.</span>
+        <span>
+          {uploading ? "Uploading image..." : "Editor ready"}
+        </span>
       </div>
-
-      <p
-        style={{
-          margin: "0 0 12px",
-          color: "#718096",
-          fontSize: 12,
-          lineHeight: 1.6,
-        }}
-      >
-        Tip: Select your text before applying formatting.
-        Place your cursor where you want an image to appear.
-      </p>
     </div>
   );
 }
+
+const separatorStyle: CSSProperties = {
+  width: 1,
+  height: 24,
+  background: "#dce3ec",
+  margin: "0 2px",
+  flexShrink: 0,
+};
