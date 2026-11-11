@@ -67,13 +67,7 @@ export default function App() {
           element={<AdminArticleEdit />}
         />
         
-        <Route
-        path="/events"
-        element={
-        <PlaceholderPage
-        title="Events"
-        description="Discover upcoming events, discussions, and activities from the Economic Policy Lab."
-    />
+        <Route path="/events" element={<Events />} />
   }
 />
         
