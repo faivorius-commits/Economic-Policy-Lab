@@ -68,8 +68,6 @@ export default function App() {
         />
         
         <Route path="/events" element={<Events />} />
-  }
-/>
         
 
         <Route path="/editor" element={<EditorialEditor />} />
