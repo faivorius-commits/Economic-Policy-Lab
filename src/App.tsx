@@ -1,7 +1,7 @@
-
 import { Link, Route, Routes } from "react-router-dom";
 import Header from "./components/Header";
 import Home from "./pages/Home";
+import Events from "./pages/Events";
 import Articles from "./pages/Articles";
 import Content from "./pages/Content";
 import Research from "./pages/Research";
