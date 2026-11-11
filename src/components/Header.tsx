@@ -11,13 +11,15 @@ const wordmarkStyle = {
 };
 
 export default function Header() {
-  const navigation = [
-    { to: "/", label: "Home" },
-    { to: "/research", label: "Research" },
-    { to: "/articles", label: "Articles" },
-    { to: "/team", label: "Team" },
-    { to: "/join", label: "Join Us" },
-  ];
+  
+const navigation = [
+  { to: "/", label: "Home" },
+  { to: "/events", label: "Events" },
+  { to: "/articles", label: "Articles" },
+  { to: "/research", label: "Research" },
+  { to: "/team", label: "Team" },
+  { to: "/join", label: "Join Us" },
+];
 
   return (
     <header className="site-header">
